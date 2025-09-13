@@ -1,0 +1,122 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  citizen
+  analyst
+  admin
+}
+
+model Role {
+  id    Int      @id @default(autoincrement())
+  name  RoleName @unique
+  users User[]
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String?
+  email        String?   @unique
+  phone        String?   @unique
+  passwordHash String
+  roleId       Int
+  role         Role      @relation(fields: [roleId], references: [id])
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  lastLogin    DateTime?
+
+  reports       Report[]
+  validations   ReportValidation[]
+  auditLogs     AuditLog[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique // store hashed
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  category    String?
+  description String?
+  submittedAt DateTime @default(now())
+  status      String   @default("pending") // pending/verified/rejected
+  severity    Int      @default(0)
+  language    String?
+  upvotes     Int      @default(0)
+  downvotes   Int      @default(0)
+  trustScore  Float?
+  location    String?
+
+  media       String
+  validations ReportValidation[]
+}
+
+model ReportValidation {
+  id          String   @id @default(uuid())
+  reportId    String
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  validatorId String
+  validator   User     @relation(fields: [validatorId], references: [id])
+  verdict     String // true/false/uncertain
+  note        String?
+  validatedAt DateTime @default(now())
+}
+
+model SocialPost {
+  id                String    @id @default(uuid())
+  source            String // twitter/facebook/youtube
+  externalId        String?
+  content           String
+  userName          String?
+  postedAt          DateTime?
+  ingestedAt        DateTime  @default(now())
+  extractedKeywords String[]
+  sentimentScore    Float?
+  relevanceScore    Float?    @default(0.0)
+
+  location String?
+}
+
+model Hotspot {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  source      String // crowd/social/combined
+  severity    Int?
+  reportCount Int?
+  lastUpdated DateTime @default(now())
+
+  location String
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String?
+  action     String
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  data       Json?
+  createdAt  DateTime @default(now())
+}
