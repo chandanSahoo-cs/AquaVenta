@@ -122,7 +122,7 @@ export function OceanAuthForm() {
       await loginUser(loginData);
       await new Promise((resolve) => setTimeout(resolve, 1500));
       setSuccess("Welcome back! Redirecting to your dashboard...");
-      setTimeout(() => router.push("/dashboard"), 1000);
+      setTimeout(() => router.push("/user/dashboard"), 1000);
     } catch (err) {
       setError("Login failed. Please check your credentials and try again.");
     } finally {
@@ -149,7 +149,7 @@ export function OceanAuthForm() {
       setSuccess(
         "Account created successfully! Redirecting to your dashboard..."
       );
-      setTimeout(() => router.push("/dashboard"), 1000);
+      setTimeout(() => router.push("/user/dashboard"), 1000);
     } catch (err) {
       setError("Registration failed. Please try again.");
     } finally {
