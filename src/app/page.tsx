@@ -31,7 +31,7 @@ export default function Home() {
                 Share photos and videos of disaster situations to help emergency responders and your community.
               </p>
               <Link
-                href="/upload"
+                href="/user/upload"
                 className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 Upload Now
@@ -56,7 +56,7 @@ export default function Home() {
                 Browse community-shared disaster media to stay informed about current situations in your area.
               </p>
               <Link
-                href="/gallery"
+                href="/user/gallery"
                 className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
               >
                 View Gallery

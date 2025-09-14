@@ -1,6 +1,7 @@
 import { getAllMedia } from "@/actions/media"
 import Link from "next/link"
-import { Report } from "../../../generated/prisma"
+import { Report } from "../../../../generated/prisma"
+import Image from "next/image"
 
 type MediaItem = Report & {
   user: {
@@ -56,16 +57,29 @@ export default async function GalleryPage() {
           ) : (
             <div className="space-y-4">
               {(media as MediaItem[]).map((item) => (
-                <div key={item.id} className="card shadow-enterprise p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex-grow">
-                    <a
-                      href={item.media}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-lg font-semibold text-primary hover:underline break-all"
-                    >
-                      {getFileNameFromUrl(item.media)}
-                    </a>
+                <div key={item.id} className="card shadow-enterprise overflow-hidden">
+                  {/* Media Preview */}
+                  {item.media && (
+                    <div className="bg-muted/20">
+                      {/\.(mp4|webm|mov|ogg)$/i.test(item.media) ? (
+                        <video
+                          src={item.media}
+                          controls
+                          className="w-full h-56 object-cover bg-black"
+                        />
+                      ) : (
+                        <Image
+                          src={item.media}
+                          alt={item.description || "Disaster media"}
+                          width={0}
+                          height={0}
+                          sizes="100vw"
+                          className="w-auto h-auto max-w-full"
+                        />
+                      )}
+                    </div>
+                  )}
+                  <div className="p-4">
                     {item.description && (
                       <p className="text-foreground mt-1">{item.description}</p>
                     )}
