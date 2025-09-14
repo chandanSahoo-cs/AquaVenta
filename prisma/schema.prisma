@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -14,12 +8,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum RoleName {
-  citizen
-  analyst
-  admin
-}
-
 model Role {
   id    Int      @id @default(autoincrement())
   name  RoleName @unique
@@ -27,66 +15,62 @@ model Role {
 }
 
 model User {
-  id           String    @id @default(uuid())
-  name         String?
-  email        String?   @unique
-  phone        String?   @unique
-  passwordHash String
-  roleId       Int
-  role         Role      @relation(fields: [roleId], references: [id])
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  lastLogin    DateTime?
-
-  reports       Report[]
-  validations   ReportValidation[]
+  id            String             @id @default(uuid())
+  name          String?
+  email         String?            @unique
+  phone         String?            @unique
+  passwordHash  String
+  roleId        Int
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  lastLogin     DateTime?
   auditLogs     AuditLog[]
   refreshTokens RefreshToken[]
+  reports       Report[]
+  validations   ReportValidation[]
+  role          Role               @relation(fields: [roleId], references: [id])
 }
 
 model RefreshToken {
   id        String   @id @default(uuid())
-  token     String   @unique // store hashed
+  token     String   @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   expiresAt DateTime
   revoked   Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Report {
-  id          String   @id @default(uuid())
+  id          String             @id @default(uuid())
   userId      String?
-  user        User?    @relation(fields: [userId], references: [id])
   category    String?
   description String?
-  submittedAt DateTime @default(now())
-  status      String   @default("pending") // pending/verified/rejected
-  severity    Int      @default(0)
+  submittedAt DateTime           @default(now())
+  status      String             @default("pending")
+  severity    Int                @default(0)
   language    String?
-  upvotes     Int      @default(0)
-  downvotes   Int      @default(0)
   trustScore  Float?
   location    String?
-
   media       String
+  user        User?              @relation(fields: [userId], references: [id])
   validations ReportValidation[]
 }
 
 model ReportValidation {
   id          String   @id @default(uuid())
   reportId    String
-  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
   validatorId String
-  validator   User     @relation(fields: [validatorId], references: [id])
-  verdict     String // true/false/uncertain
+  verdict     String
   note        String?
   validatedAt DateTime @default(now())
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  validator   User     @relation(fields: [validatorId], references: [id])
 }
 
 model SocialPost {
   id                String    @id @default(uuid())
-  source            String // twitter/facebook/youtube
+  source            String
   externalId        String?
   content           String
   userName          String?
@@ -95,19 +79,17 @@ model SocialPost {
   extractedKeywords String[]
   sentimentScore    Float?
   relevanceScore    Float?    @default(0.0)
-
-  location String?
+  location          String?
 }
 
 model Hotspot {
   id          String   @id @default(uuid())
   createdAt   DateTime @default(now())
-  source      String // crowd/social/combined
+  source      String
   severity    Int?
   reportCount Int?
   lastUpdated DateTime @default(now())
-
-  location String
+  location    String
 }
 
 model AuditLog {
@@ -116,7 +98,13 @@ model AuditLog {
   entityId   String?
   action     String
   userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
   data       Json?
   createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+}
+
+enum RoleName {
+  citizen
+  analyst
+  admin
 }
