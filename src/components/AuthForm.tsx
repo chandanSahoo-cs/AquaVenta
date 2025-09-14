@@ -1,7 +1,6 @@
 "use client";
 
-import type React from "react";
-import { useState, useTransition } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,28 +12,43 @@ import {
   Fish,
   AlertTriangle,
   Droplets,
+  Shell,
+  Anchor,
 } from "lucide-react";
+// import oceanBackground from "@/assets/ocean-background.jpg";
 import { useRouter } from "next/navigation";
 import { loginUser, registerUser } from "@/actions/user.actions";
+import Link from "next/link";
+
+interface AuthFormData {
+  name?: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword?: string;
+}
 
 export function OceanAuthForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLogin, setIsLogin] = useState(true);
 
-  const [loginData, setLoginData] = useState({
+  const [loginData, setLoginData] = useState<AuthFormData>({
     email: "",
     phone: "",
     password: "",
   });
 
-  const [signupData, setSignupData] = useState({
+  const [signupData, setSignupData] = useState<AuthFormData>({
     name: "",
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
   });
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,49 +67,106 @@ export function OceanAuthForm() {
     setError("");
   };
 
+  const validateSignupForm = () => {
+    if (!signupData.name?.trim()) {
+      setError("Full name is required");
+      return false;
+    }
+    if (!signupData.email?.trim()) {
+      setError("Email is required");
+      return false;
+    }
+    if (!signupData.phone?.trim()) {
+      setError("Phone number is required");
+      return false;
+    }
+    if (!signupData.password?.trim()) {
+      setError("Password is required");
+      return false;
+    }
+    if (signupData.password !== signupData.confirmPassword) {
+      setError("Passwords do not match");
+      return false;
+    }
+    if (signupData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return false;
+    }
+    return true;
+  };
+
+  const validateLoginForm = () => {
+    if (!loginData.email?.trim()) {
+      setError("Email is required");
+      return false;
+    }
+    if (!loginData.phone?.trim()) {
+      setError("Phone number is required");
+      return false;
+    }
+    if (!loginData.password?.trim()) {
+      setError("Password is required");
+      return false;
+    }
+    return true;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    startTransition(async () => {
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        // setSuccess("Login successful!")
-        await loginUser(loginData);
-        router.push("/user/dashboard");
-      } catch (err) {
-        setError("Login failed. Please try again.");
-      }
-    });
+    if (!validateLoginForm()) return;
+
+    setIsPending(true);
+    try {
+      await loginUser(loginData);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setSuccess("Welcome back! Redirecting to your dashboard...");
+      setTimeout(() => router.push("/dashboard"), 1000);
+    } catch (err) {
+      setError("Login failed. Please check your credentials and try again.");
+    } finally {
+      setIsPending(false);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    startTransition(async () => {
-      try {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        // setSuccess("Account created successfully!")
-        await registerUser(signupData);
-        router.push("/user/dashboard");
-      } catch (err) {
-        setError("Registration failed. Please try again.");
-      }
-    });
+    if (!validateSignupForm()) return;
+
+    setIsPending(true);
+    try {
+      const data = {
+        name: signupData.name!,
+        email: signupData.email,
+        phone: signupData.phone,
+        password: signupData.password,
+      };
+      await registerUser(data);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setSuccess(
+        "Account created successfully! Redirecting to your dashboard..."
+      );
+      setTimeout(() => router.push("/dashboard"), 1000);
+    } catch (err) {
+      setError("Registration failed. Please try again.");
+    } finally {
+      setIsPending(false);
+    }
   };
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
     setError("");
+    setSuccess("");
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Ocean Hazards */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-cyan-50 to-blue-100 p-8 xl:p-12 flex-col justify-between relative overflow-hidden">
+    <div className="min-h-screen flex overflow-hidden">
+      {/* Left Side - Ocean Conservation */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-cyan-50 to-blue-100 p-8 xl:p-12 flex-col justify-center items-center relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute inset-0 opacity-10">
           <Waves className="absolute top-20 left-20 w-32 h-32 text-blue-600 animate-pulse" />
@@ -117,129 +188,82 @@ export function OceanAuthForm() {
           />
         </div>
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-8">
-            <Waves className="w-8 h-8 text-primary animate-pulse" />
-            <h1 className="text-2xl font-bold text-primary">AquaVenta</h1>
+        {/* Centered Heading */}
+        <div className="relative z-10 text-center space-y-6">
+          <div className="flex justify-center items-center gap-3 mb-4">
+            <p className="text-8xl  font-bold text-primary">
+              AquaVenta
+            </p>
           </div>
+          <p className="text-lg xl:text-xl text-muted-foreground max-w-md mx-auto">
+            Stay informed about coastal hazards in your region and their impact
+            on communities and ecosystems.
+          </p>
 
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-3xl font-bold text-foreground mb-4 text-balance">
-                Protecting Our Oceans Together
-              </h2>
-              <p className="text-lg text-muted-foreground text-pretty">
-                Join our mission to monitor and protect marine ecosystems from
-                environmental hazards.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/20 animate-in fade-in-50 slide-in-from-left-5 duration-700">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">
-                      Coral Bleaching
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Rising ocean temperatures cause coral to expel algae,
-                      leading to widespread bleaching events.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/20 animate-in fade-in-50 slide-in-from-left-5 duration-700"
-                style={{ animationDelay: "200ms" }}>
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">
-                      Plastic Pollution
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Over 8 million tons of plastic waste enter our oceans
-                      annually, threatening marine life.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/20 animate-in fade-in-50 slide-in-from-left-5 duration-700"
-                style={{ animationDelay: "400ms" }}>
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 text-purple-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">
-                      Ocean Acidification
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Increased CO₂ absorption makes oceans more acidic,
-                      affecting shell-forming organisms.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold px-8 py-3 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg">
-            Learn More About Ocean Conservation
+          <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold px-8 py-3 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg mt-8">
+            <Link href="https://www.indiascienceandtechnology.gov.in/listingpage/ocean-initiatives">
+              Learn About Ocean Conservation
+            </Link>
           </Button>
         </div>
       </div>
 
       {/* Right Side - Authentication */}
-      <div className="w-full lg:w-1/2 bg-card flex items-center justify-center p-6 lg:p-8">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4 lg:hidden">
-              <Waves className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold text-primary">AquaVenta</h1>
+      <div className="w-full lg:w-1/2 bg-card flex items-center justify-center p-8 lg:p-12">
+        <div className="w-full max-w-lg">
+          <div className="text-center mb-12">
+            {/* Mobile Brand */}
+            <div className="flex items-center justify-center gap-3 mb-8 lg:hidden">
+              <div className="relative">
+                <Waves className="w-8 h-8 text-primary animate-pulse" />
+                <div className="absolute inset-0 w-8 h-8 bg-primary/20 rounded-full animate-ripple" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-primary">AquaVenta</h1>
+                <p className="text-xs text-muted-foreground">
+                  Ocean Conservation
+                </p>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-card-foreground mb-2">
-              {isLogin ? "Welcome Back" : "Create Account"}
+
+            <h2 className="text-4xl font-bold text-card-foreground mb-4">
+              {isLogin ? "Welcome Back" : "Join Our Mission"}
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-lg text-muted-foreground leading-relaxed">
               {isLogin
-                ? "Sign in to access your ocean monitoring dashboard"
-                : "Join us in protecting our oceans"}
+                ? "Sign in to access your ocean monitoring dashboard and continue protecting our marine ecosystems"
+                : "Create your account and become part of the ocean conservation community"}
             </p>
           </div>
 
           <div className="relative">
             {/* Login Form */}
             {isLogin && (
-              <div className="animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
-                <form onSubmit={handleLogin} className="space-y-5">
-                  <div className="space-y-2">
+              <div className="space-y-6">
+                <form onSubmit={handleLogin} className="space-y-6">
+                  <div className="space-y-3">
                     <Label
                       htmlFor="login-email"
-                      className="text-sm font-medium text-card-foreground">
-                      Email
+                      className="text-base font-semibold text-card-foreground">
+                      Email Address
                     </Label>
                     <Input
                       id="login-email"
                       name="email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder="Enter your email address"
                       value={loginData.email}
                       onChange={handleLoginChange}
-                      className="h-12 bg-input border-border focus:border-primary focus:ring-primary transition-all duration-200 text-base"
+                      className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
                       required
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label
                       htmlFor="login-phone"
-                      className="text-sm font-medium text-card-foreground">
-                      Phone
+                      className="text-base font-semibold text-card-foreground">
+                      Phone Number
                     </Label>
                     <Input
                       id="login-phone"
@@ -248,15 +272,15 @@ export function OceanAuthForm() {
                       placeholder="Enter your phone number"
                       value={loginData.phone}
                       onChange={handleLoginChange}
-                      className="h-12 bg-input border-border focus:border-primary focus:ring-primary transition-all duration-200 text-base"
+                      className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
                       required
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label
                       htmlFor="login-password"
-                      className="text-sm font-medium text-card-foreground">
+                      className="text-base font-semibold text-card-foreground">
                       Password
                     </Label>
                     <div className="relative">
@@ -267,35 +291,51 @@ export function OceanAuthForm() {
                         placeholder="Enter your password"
                         value={loginData.password}
                         onChange={handleLoginChange}
-                        className="h-12 bg-input border-border focus:border-primary focus:ring-primary pr-12 transition-all duration-200 text-base"
+                        className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 pr-14 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-card-foreground transition-colors duration-200">
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors duration-200">
                         {showPassword ? (
-                          <EyeOff className="h-5 w-5" />
+                          <EyeOff className="h-6 w-6" />
                         ) : (
-                          <Eye className="h-5 w-5" />
+                          <Eye className="h-6 w-6" />
                         )}
                       </button>
                     </div>
                   </div>
 
                   {error && (
-                    <Alert className="border-destructive/20 bg-destructive/10 animate-in fade-in-50 duration-300">
-                      <AlertDescription className="text-destructive">
+                    <Alert className="border-destructive/30 bg-destructive/10 rounded-xl">
+                      <AlertDescription className="text-destructive font-medium text-base">
                         {error}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {success && (
+                    <Alert className="border-success/30 bg-success/10 rounded-xl">
+                      <AlertDescription className="text-success font-medium text-base">
+                        {success}
                       </AlertDescription>
                     </Alert>
                   )}
 
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all duration-300 hover:scale-[1.02] text-base"
+                    size="lg"
+                    className="w-full h-14  hover:opacity-90 text-primary-foreground font-bold text-lg rounded-xl  transition-all duration-300 hover:scale-[1.02] "
                     disabled={isPending}>
-                    {isPending ? "Signing in..." : "Sign In"}
+                    {isPending ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mr-3" />
+                        Signing In...
+                      </>
+                    ) : (
+                      "Sign In to Dashboard"
+                    )}
                   </Button>
                 </form>
               </div>
@@ -303,12 +343,12 @@ export function OceanAuthForm() {
 
             {/* Signup Form */}
             {!isLogin && (
-              <div className="animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
-                <form onSubmit={handleSignup} className="space-y-5">
-                  <div className="space-y-2">
+              <div className="space-y-6">
+                <form onSubmit={handleSignup} className="space-y-6">
+                  <div className="space-y-3">
                     <Label
                       htmlFor="signup-name"
-                      className="text-sm font-medium text-card-foreground">
+                      className="text-base font-semibold text-card-foreground">
                       Full Name
                     </Label>
                     <Input
@@ -318,34 +358,34 @@ export function OceanAuthForm() {
                       placeholder="Enter your full name"
                       value={signupData.name}
                       onChange={handleSignupChange}
-                      className="h-12 bg-input border-border focus:border-primary focus:ring-primary transition-all duration-200 text-base"
+                      className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
                       required
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label
                       htmlFor="signup-email"
-                      className="text-sm font-medium text-card-foreground">
-                      Email
+                      className="text-base font-semibold text-card-foreground">
+                      Email Address
                     </Label>
                     <Input
                       id="signup-email"
                       name="email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder="Enter your email address"
                       value={signupData.email}
                       onChange={handleSignupChange}
-                      className="h-12 bg-input border-border focus:border-primary focus:ring-primary transition-all duration-200 text-base"
+                      className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
                       required
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label
                       htmlFor="signup-phone"
-                      className="text-sm font-medium text-card-foreground">
-                      Phone
+                      className="text-base font-semibold text-card-foreground">
+                      Phone Number
                     </Label>
                     <Input
                       id="signup-phone"
@@ -354,67 +394,119 @@ export function OceanAuthForm() {
                       placeholder="Enter your phone number"
                       value={signupData.phone}
                       onChange={handleSignupChange}
-                      className="h-12 bg-input border-border focus:border-primary focus:ring-primary transition-all duration-200 text-base"
+                      className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
                       required
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="signup-password"
-                      className="text-sm font-medium text-card-foreground">
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="signup-password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Create a password"
-                        value={signupData.password}
-                        onChange={handleSignupChange}
-                        className="h-12 bg-input border-border focus:border-primary focus:ring-primary pr-12 transition-all duration-200 text-base"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-card-foreground transition-colors duration-200">
-                        {showPassword ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
-                      </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="signup-password"
+                        className="text-base font-semibold text-card-foreground">
+                        Password
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="signup-password"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Create password"
+                          value={signupData.password}
+                          onChange={handleSignupChange}
+                          className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 pr-14 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors duration-200">
+                          {showPassword ? (
+                            <EyeOff className="h-6 w-6" />
+                          ) : (
+                            <Eye className="h-6 w-6" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="signup-confirm-password"
+                        className="text-base font-semibold text-card-foreground">
+                        Confirm Password
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="signup-confirm-password"
+                          name="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Confirm password"
+                          value={signupData.confirmPassword}
+                          onChange={handleSignupChange}
+                          className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 pr-14 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors duration-200">
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-6 w-6" />
+                          ) : (
+                            <Eye className="h-6 w-6" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
                   {error && (
-                    <Alert className="border-destructive/20 bg-destructive/10 animate-in fade-in-50 duration-300">
-                      <AlertDescription className="text-destructive">
+                    <Alert className="border-destructive/30 bg-destructive/10 rounded-xl">
+                      <AlertDescription className="text-destructive font-medium text-base">
                         {error}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {success && (
+                    <Alert className="border-success/30 bg-success/10 rounded-xl">
+                      <AlertDescription className="text-success font-medium text-base">
+                        {success}
                       </AlertDescription>
                     </Alert>
                   )}
 
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all duration-300 hover:scale-[1.02] text-base"
+                    size="lg"
+                    className="w-full h-14 hover:opacity-90 text-primary-foreground font-bold text-lg rounded-xl  transition-all duration-300 hover:scale-[1.02] "
                     disabled={isPending}>
-                    {isPending ? "Creating account..." : "Create Account"}
+                    {isPending ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mr-3" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      "Create My Account"
+                    )}
                   </Button>
                 </form>
               </div>
             )}
           </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+          <div className="mt-8 text-center">
+            <p className="text-base text-muted-foreground">
+              {isLogin
+                ? "Don't have an account yet?"
+                : "Already protecting our oceans?"}{" "}
               <button
                 onClick={toggleAuthMode}
-                className="text-primary hover:text-primary/80 font-medium transition-colors duration-200 underline underline-offset-4">
-                {isLogin ? "Sign up" : "Sign in"}
+                className="text-primary hover:text-primary-glow font-bold transition-colors duration-300 underline underline-offset-4 decoration-2 hover:decoration-primary-glow">
+                {isLogin ? "Join the Mission" : "Sign In Instead"}
               </button>
             </p>
           </div>
