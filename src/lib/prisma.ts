@@ -1,9 +1,14 @@
-import { PrismaClient } from "../../generated/prisma"
+// lib/prisma.ts
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
+import { PrismaClient } from "../../generated/prisma";
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: ["query"], // optional: logs all queries
+  });
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
