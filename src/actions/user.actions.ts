@@ -1,3 +1,5 @@
+"use server";
+
 import jwt, { SignOptions } from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
@@ -124,6 +126,14 @@ async function generateAccessAndRefreshToken(id: string) {
   }
 }
 
+const giveAccessTokeAndRefreshToken = async () => {
+  const cookie = await cookies();
+  const accessToken = cookie.get("accessToken")?.value;
+  const refreshToken = cookie.get("refreshToken")?.value;
+
+  return { accessToken, refreshToken };
+};
+
 // user actions
 
 const registerUser = async ({
@@ -232,14 +242,6 @@ const loginUser = async ({ email, phone, password }: LoginDetails) => {
   }
 };
 
-const giveAccessTokeAndRefreshToken = async () => {
-  const cookie = await cookies();
-  const accessToken = cookie.get("accessToken")?.value;
-  const refreshToken = cookie.get("refreshToken")?.value;
-
-  return { accessToken, refreshToken };
-};
-
 const logoutUser = async () => {
   try {
     const cookie = await cookies();
@@ -300,4 +302,5 @@ export {
   registerUser,
   loginUser,
   logoutUser,
+  giveAccessTokeAndRefreshToken,
 };
