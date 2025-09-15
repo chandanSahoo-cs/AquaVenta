@@ -103,6 +103,15 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
@@ -116,7 +125,7 @@ export function Navbar() {
             : "bg-white/90 backdrop-blur-sm py-4"
         )}>
         <div className="max-w-6xl mx-auto px-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between ">
             <Link
               href="/"
               className="flex items-center gap-2 group no-underline">
@@ -132,7 +141,7 @@ export function Navbar() {
 
             <div
               className={cn(
-                "hidden transition-all duration-300",
+                "hidden transition-all duration-300 mx-10",
                 isScrolled ? "lg:flex" : "md:flex",
                 "items-center space-x-1"
               )}>
@@ -156,7 +165,7 @@ export function Navbar() {
                       )}
                     </Button>
                   </Link>
-                );  
+                );
               })}
             </div>
 
@@ -202,7 +211,8 @@ export function Navbar() {
         <div
           className={cn(
             "overflow-hidden transition-all duration-300 ease-out",
-            isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+            isScrolled ? "lg:hidden" : "md:hidden"
           )}>
           <div className="bg-white/95 backdrop-blur-lg border-t border-gray-200/60 shadow-lg">
             <div className="max-w-6xl mx-auto px-6 py-4">
