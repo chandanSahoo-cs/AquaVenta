@@ -12,19 +12,19 @@ type MediaItem = Report & {
 export default async function GalleryPage() {
   const media = await getAllMedia()
 
-  // Helper function to extract a readable filename from the Firebase URL
-  const getFileNameFromUrl = (url: string) => {
-    try {
-      const path = new URL(url).pathname
-      const decodedPath = decodeURIComponent(path)
-      // The filename is the last part of the path after the last '/'
-      const fileNameWithFolder = decodedPath.substring(decodedPath.lastIndexOf("/") + 1)
-      // Remove the folder prefix if it exists (e.g., 'media/')
-      return fileNameWithFolder.substring(fileNameWithFolder.lastIndexOf("/") + 1)
-    } catch (_e) {
-      return "media_file" // Fallback name
-    }
-  }
+  // // Helper function to extract a readable filename from the Firebase URL
+  // const getFileNameFromUrl = (url: string) => {
+  //   try {
+  //     const path = new URL(url).pathname
+  //     const decodedPath = decodeURIComponent(path)
+  //     // The filename is the last part of the path after the last '/'
+  //     const fileNameWithFolder = decodedPath.substring(decodedPath.lastIndexOf("/") + 1)
+  //     // Remove the folder prefix if it exists (e.g., 'media/')
+  //     return fileNameWithFolder.substring(fileNameWithFolder.lastIndexOf("/") + 1)
+  //   } catch (_e) {
+  //     return "media_file" // Fallback name
+  //   }
+  // }
 
   return (
     <div className="container mx-auto px-4 py-12">

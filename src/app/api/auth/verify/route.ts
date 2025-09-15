@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 import { generateAccessToken } from "@/actions/user.actions";
+import { prisma } from "@/lib/prisma";
+import jwt from "jsonwebtoken";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const { refreshToken } = await req.json();

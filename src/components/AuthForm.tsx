@@ -1,24 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import { loginUser, registerUser } from "@/actions/user.actions";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Eye,
-  EyeOff,
-  Waves,
-  Fish,
-  AlertTriangle,
-  Droplets,
-  Shell,
-  Anchor,
-} from "lucide-react";
-// import oceanBackground from "@/assets/ocean-background.jpg";
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { loginUser, registerUser } from "@/actions/user.actions";
-import Link from "next/link";
+import React, { useState } from "react";
 
 interface AuthFormData {
   name?: string;
@@ -164,36 +153,13 @@ export function OceanAuthForm() {
   };
 
   return (
-    <div className="min-h-screen flex overflow-hidden">
+    <div className="min-h-screen flex">
       {/* Left Side - Ocean Conservation */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-cyan-50 to-blue-100 p-8 xl:p-12 flex-col justify-center items-center relative overflow-hidden">
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 opacity-10">
-          <Waves className="absolute top-20 left-20 w-32 h-32 text-blue-600 animate-pulse" />
-          <Fish
-            className="absolute top-40 right-32 w-24 h-24 text-blue-500 animate-bounce"
-            style={{ animationDuration: "3s" }}
-          />
-          <Droplets
-            className="absolute bottom-40 left-32 w-28 h-28 text-cyan-600 animate-pulse"
-            style={{ animationDelay: "1s" }}
-          />
-          <Waves
-            className="absolute bottom-20 right-20 w-20 h-20 text-blue-400 animate-bounce"
-            style={{ animationDuration: "4s", animationDelay: "2s" }}
-          />
-          <Fish
-            className="absolute top-1/2 left-10 w-16 h-16 text-cyan-500 animate-pulse"
-            style={{ animationDelay: "3s" }}
-          />
-        </div>
-
         {/* Centered Heading */}
         <div className="relative z-10 text-center space-y-6">
           <div className="flex justify-center items-center gap-3 mb-4">
-            <p className="text-8xl  font-bold text-primary">
-              AquaVenta
-            </p>
+            <p className="text-8xl font-bold text-primary">AquaVenta</p>
           </div>
           <p className="text-lg xl:text-xl text-muted-foreground max-w-md mx-auto">
             Stay informed about coastal hazards in your region and their impact
@@ -201,28 +167,24 @@ export function OceanAuthForm() {
           </p>
 
           <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold px-8 py-3 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg mt-8">
-            <Link href="https://www.indiascienceandtechnology.gov.in/listingpage/ocean-initiatives">
+            <a
+              href="https://www.indiascienceandtechnology.gov.in/listingpage/ocean-initiatives"
+              target="_blank"
+              rel="noopener noreferrer">
               Learn About Ocean Conservation
-            </Link>
+            </a>
           </Button>
         </div>
       </div>
 
       {/* Right Side - Authentication */}
-      <div className="w-full lg:w-1/2 bg-card flex items-center justify-center p-8 lg:p-12">
+      <div className="w-full lg:w-1/2 bg-card flex items-center justify-center p-8 lg:p-6">
         <div className="w-full max-w-lg">
           <div className="text-center mb-12">
             {/* Mobile Brand */}
             <div className="flex items-center justify-center gap-3 mb-8 lg:hidden">
-              <div className="relative">
-                <Waves className="w-8 h-8 text-primary animate-pulse" />
-                <div className="absolute inset-0 w-8 h-8 bg-primary/20 rounded-full animate-ripple" />
-              </div>
               <div>
                 <h1 className="text-2xl font-bold text-primary">AquaVenta</h1>
-                <p className="text-xs text-muted-foreground">
-                  Ocean Conservation
-                </p>
               </div>
             </div>
 
@@ -362,41 +324,42 @@ export function OceanAuthForm() {
                       required
                     />
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="signup-email"
+                        className="text-base font-semibold text-card-foreground">
+                        Email Address
+                      </Label>
+                      <Input
+                        id="signup-email"
+                        name="email"
+                        type="email"
+                        placeholder="Enter your email address"
+                        value={signupData.email}
+                        onChange={handleSignupChange}
+                        className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
+                        required
+                      />
+                    </div>
 
-                  <div className="space-y-3">
-                    <Label
-                      htmlFor="signup-email"
-                      className="text-base font-semibold text-card-foreground">
-                      Email Address
-                    </Label>
-                    <Input
-                      id="signup-email"
-                      name="email"
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={signupData.email}
-                      onChange={handleSignupChange}
-                      className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label
-                      htmlFor="signup-phone"
-                      className="text-base font-semibold text-card-foreground">
-                      Phone Number
-                    </Label>
-                    <Input
-                      id="signup-phone"
-                      name="phone"
-                      type="tel"
-                      placeholder="Enter your phone number"
-                      value={signupData.phone}
-                      onChange={handleSignupChange}
-                      className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
-                      required
-                    />
+                    <div className="space-y-3">
+                      <Label
+                        htmlFor="signup-phone"
+                        className="text-base font-semibold text-card-foreground">
+                        Phone Number
+                      </Label>
+                      <Input
+                        id="signup-phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="Enter your phone number"
+                        value={signupData.phone}
+                        onChange={handleSignupChange}
+                        className="h-14 bg-input/50 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 text-base rounded-xl backdrop-blur-sm"
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
