@@ -1,9 +1,9 @@
 "use server";
 
-import jwt, { SignOptions } from "jsonwebtoken";
-import bcrypt from "bcrypt";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcrypt";
 import { addDays } from "date-fns";
+import jwt, { SignOptions } from "jsonwebtoken";
 import { cookies } from "next/headers";
 
 interface TokenPayload {
@@ -85,7 +85,7 @@ async function generateAccessAndRefreshToken(id: string) {
     const userEmail = user.email;
 
     if (!userName && !userEmail) {
-      throw new Error("Invalide user credentials");
+      throw new Error("Invalid user credentials");
     }
 
     const refreshToken = generateRefreshToken({ id });
@@ -126,12 +126,24 @@ async function generateAccessAndRefreshToken(id: string) {
   }
 }
 
-const giveAccessTokeAndRefreshToken = async () => {
+const giveUserPayload = async () => {
   const cookie = await cookies();
   const accessToken = cookie.get("accessToken")?.value;
-  const refreshToken = cookie.get("refreshToken")?.value;
 
-  return { accessToken, refreshToken };
+  const { id, name, email, role } = jwt.verify(
+    accessToken!,
+    process.env.ACCESS_TOKEN_SECRET!
+  ) as jwt.JwtPayload;
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  const userPresent = user !== null;
+
+  return { id, name, email, role, userPresent };
 };
 
 // user actions
@@ -296,11 +308,11 @@ const logoutUser = async () => {
 };
 
 export {
-  generateAccessToken,
-  hashPassword,
   dehashPassword,
-  registerUser,
+  generateAccessToken,
+  giveUserPayload,
+  hashPassword,
   loginUser,
   logoutUser,
-  giveAccessTokeAndRefreshToken,
+  registerUser,
 };

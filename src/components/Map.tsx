@@ -1,11 +1,11 @@
 // @ts-nocheck
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import maplibregl, { MercatorCoordinate, Map as MapType } from "maplibre-gl";
+import maplibregl, { Map as MapType, MercatorCoordinate } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import "maplibre-gl/dist/maplibre-gl.css";
 
 type Report = {
   id: string;
@@ -18,7 +18,10 @@ type Report = {
 const demoReports: Report[] = [
   { id: "1", lat: 19.076, lng: 72.8777, type: "High Waves" }, // Mumbai
   { id: "2", lat: 13.0827, lng: 80.2707, type: "Flooding" }, // Chennai
-//   { id: "3", lat: 8.5241, lng: 76.9366, type: "Swell Surge" }, // Kerala
+  { id: "3", lat: 8.52, lng: 92.43, type: "Flooding" }, // Chennai
+  // "latitude": 8.52,
+  // "longitude": 92.43,
+  //   { id: "3", lat: 8.5241, lng: 76.9366, type: "Swell Surge" }, // Kerala
 ];
 
 export default function Map3D() {
@@ -30,8 +33,8 @@ export default function Map3D() {
 
     // India bounding box (approx)
     const indiaBounds: [[number, number], [number, number]] = [
-      [68.0, 6.5],   // SW corner (lng, lat)
-      [97.4, 35.5],  // NE corner (lng, lat)
+      [68.0, 6.5], // SW corner (lng, lat)
+      [97.4, 35.5], // NE corner (lng, lat)
     ];
 
     // Initialize MapLibre focused on India
@@ -54,10 +57,8 @@ export default function Map3D() {
     const modelAltitude = 0;
     const modelRotate: [number, number, number] = [Math.PI / 2, 0, 0];
 
-    const modelAsMercatorCoordinate: MercatorCoordinate = MercatorCoordinate.fromLngLat(
-      modelOrigin,
-      modelAltitude
-    );
+    const modelAsMercatorCoordinate: MercatorCoordinate =
+      MercatorCoordinate.fromLngLat(modelOrigin, modelAltitude);
 
     const modelTransform = {
       translateX: modelAsMercatorCoordinate.x,
@@ -118,14 +119,22 @@ export default function Map3D() {
           modelTransform.rotateZ
         );
 
-        const m = new THREE.Matrix4().fromArray(matrix.defaultProjectionData.mainMatrix);
+        const m = new THREE.Matrix4().fromArray(
+          matrix.defaultProjectionData.mainMatrix
+        );
         const l = new THREE.Matrix4()
           .makeTranslation(
             modelTransform.translateX,
             modelTransform.translateY,
             modelTransform.translateZ
           )
-          .scale(new THREE.Vector3(modelTransform.scale, -modelTransform.scale, modelTransform.scale))
+          .scale(
+            new THREE.Vector3(
+              modelTransform.scale,
+              -modelTransform.scale,
+              modelTransform.scale
+            )
+          )
           .multiply(rotationX)
           .multiply(rotationY)
           .multiply(rotationZ);
@@ -153,5 +162,7 @@ export default function Map3D() {
     });
   }, []);
 
-  return <div ref={mapContainer} className="w-full h-[600px] rounded-lg border" />;
+  return (
+    <div ref={mapContainer} className="w-full h-[600px] rounded-lg border" />
+  );
 }
