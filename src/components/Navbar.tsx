@@ -1,76 +1,110 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { usePathname } from "next/navigation"
-import { LayoutDashboard, Upload, MapPin, FileText, Shield, TrendingUp, Menu, X, Waves } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
-
-// Mock user role for demo - in real app this would come from auth context
-const mockUserRole = "citizen" // Can be "citizen", "admin", or "analyst"
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  CaptionsIcon,
+  LayoutDashboard,
+  Map,
+  Menu,
+  ShieldUserIcon,
+  TrendingUp,
+  Upload,
+  X,
+} from "lucide-react";
+// import { cookies } from "next/headers";
+import { logoutUser } from "@/actions/user.actions";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { RoleName } from "../../generated/prisma";
 
 export function Navbar() {
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const pathname = usePathname()
+  const [userRole, setUserRole] = useState<RoleName | string>("");
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  const router = useRouter();
 
   const navbarItems = [
     {
       icon: LayoutDashboard,
       name: "Dashboard",
-      role: "citizen",
-      href: "/dashboard",
+      role: RoleName.citizen,
+      href: "/user/dashboard",
     },
     {
       icon: Upload,
       name: "Reports",
-      role: "citizen",
-      href: "/reports",
+      role: RoleName.citizen,
+      href: "/user/reports",
     },
     {
-      icon: MapPin,
-      name: "Map",
-      role: "citizen",
-      href: "/map",
+      icon: Map,
+      name: "Public Map",
+      role: RoleName.citizen,
+      href: "/user/map",
     },
     {
-      icon: FileText,
-      name: "Submissions",
-      role: "citizen",
-      href: "/submissions",
+      icon: CaptionsIcon,
+      name: "Your Submissions",
+      role: RoleName.citizen,
+      href: "/user/submissions",
     },
     {
-      icon: Shield,
-      name: "Admin",
-      role: "admin",
-      href: "/admin",
+      icon: ShieldUserIcon,
+      name: "Admin Dashboard",
+      role: RoleName.admin,
+      href: "/admin/dashboard",
     },
     {
       icon: TrendingUp,
-      name: "Analytics",
-      role: "analyst",
-      href: "/analytics",
+      name: "Analyst Dashboard",
+      role: RoleName.analyst,
+      href: "/analyst/dashboard",
     },
-  ]
+  ];
 
   const visibleItems = navbarItems.filter((item) => {
-    if (item.role === "citizen") return true
-    return item.role === mockUserRole
-  })
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10)
+    if (userRole == RoleName.admin) return true;
+    else {
+      if (item.role === "citizen") return true;
+      return item.role === userRole;
     }
+  });
 
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  const handleLogout = async () => {
+    try {
+      const res = await logoutUser();
+      if (res.success) {
+        toast.success("Logged out successfully");
+        router.push("/auth");
+      } else throw new Error("Failed to log out");
+    } catch {
+      toast.error("Failed to log out. Try again");
+    }
+  };
 
   useEffect(() => {
-    setIsMobileMenuOpen(false)
-  }, [pathname])
+    const fetchPayload = async () => {
+      try {
+        const res = await fetch("/api/me");
+        if (!res.ok) throw new Error("Not authenticated");
+        const data = await res.json();
+        setUserRole(data.userPayload?.role);
+      } catch (error) {
+        setUserRole("");
+      }
+    };
+
+    fetchPayload();
+  }, []);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
     <>
@@ -79,18 +113,19 @@ export function Navbar() {
           "fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-out",
           isScrolled
             ? "bg-white/95 backdrop-blur-lg border-b border-gray-200/60 shadow-sm py-3"
-            : "bg-white/90 backdrop-blur-sm py-4",
-        )}
-      >
+            : "bg-white/90 backdrop-blur-sm py-4"
+        )}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-teal-500 rounded-lg shadow-sm group-hover:shadow-md transition-all duration-200">
-                  <Waves className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
-                  AquaVenta
+            <Link
+              href="/"
+              className="flex items-center gap-2 group no-underline">
+              <div className="items-center gap-2">
+                <span className="text-xl font-bold text-[#3871c1] group-hover:text-[#656263] transition-colors duration-200 ">
+                  Aqua
+                </span>
+                <span className="text-xl font-bold text-[#656263] group-hover:text-[#3871c1] transition-colors duration-200 ">
+                  Venta
                 </span>
               </div>
             </Link>
@@ -99,11 +134,10 @@ export function Navbar() {
               className={cn(
                 "hidden transition-all duration-300",
                 isScrolled ? "lg:flex" : "md:flex",
-                "items-center space-x-1",
-              )}
-            >
+                "items-center space-x-1"
+              )}>
               {visibleItems.map(({ icon: Icon, name, role, href }) => {
-                const isActive = pathname === href
+                const isActive = pathname === href;
                 return (
                   <Link key={name} href={href}>
                     <Button
@@ -111,9 +145,10 @@ export function Navbar() {
                       className={cn(
                         "relative px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg",
                         "hover:bg-blue-50 hover:text-blue-700",
-                        isActive ? "text-blue-700 bg-blue-50/80" : "text-gray-600 hover:text-gray-900",
-                      )}
-                    >
+                        isActive
+                          ? "text-blue-700 bg-blue-50/80"
+                          : "text-gray-600 hover:text-gray-900"
+                      )}>
                       <Icon className="h-4 w-4 mr-2" />
                       {name}
                       {isActive && (
@@ -121,42 +156,44 @@ export function Navbar() {
                       )}
                     </Button>
                   </Link>
-                )
+                );  
               })}
             </div>
 
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-sm font-medium border-gray-300 hover:border-blue-300 hover:text-blue-700 bg-transparent"
-                  style={{ backgroundColor: "#ffffff", color: "#374151" }}
-                >
-                  Sign In
-                </Button>
-                <Button
-                  size="sm"
-                  className="text-sm font-medium shadow-sm"
-                  style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "#1d4ed8"
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "#2563eb"
-                  }}
-                >
-                  Get Started
-                </Button>
+                {userRole === "" ? (
+                  <Button
+                    onClick={() => router.push("/auth")}
+                    variant="outline"
+                    className="w-full justify-center text-sm font-medium border-gray-300 bg-transparent"
+                    style={{ backgroundColor: "#ffffff", color: "#374151" }}>
+                    Sign In
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => handleLogout()}
+                    variant="outline"
+                    className="w-full justify-center text-sm font-medium border-gray-300 bg-transparent"
+                    style={{ backgroundColor: "#ffffff", color: "#374151" }}>
+                    Log Out
+                  </Button>
+                )}
               </div>
 
               <Button
                 variant="ghost"
                 size="sm"
-                className={cn("p-2 transition-all duration-300", isScrolled ? "lg:hidden" : "md:hidden")}
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                className={cn(
+                  "p-2 transition-all duration-300",
+                  isScrolled ? "lg:hidden" : "md:hidden"
+                )}
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                {isMobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
               </Button>
             </div>
           </div>
@@ -165,14 +202,13 @@ export function Navbar() {
         <div
           className={cn(
             "overflow-hidden transition-all duration-300 ease-out",
-            isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
-          )}
-        >
+            isMobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          )}>
           <div className="bg-white/95 backdrop-blur-lg border-t border-gray-200/60 shadow-lg">
             <div className="max-w-6xl mx-auto px-6 py-4">
               <div className="space-y-1">
                 {visibleItems.map(({ icon: Icon, name, role, href }) => {
-                  const isActive = pathname === href
+                  const isActive = pathname === href;
                   return (
                     <Link key={name} href={href}>
                       <Button
@@ -180,36 +216,35 @@ export function Navbar() {
                         className={cn(
                           "w-full justify-start gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 rounded-lg",
                           "hover:bg-blue-50 hover:text-blue-700",
-                          isActive ? "text-blue-700 bg-blue-50/80 border-l-2 border-blue-600" : "text-gray-600",
-                        )}
-                      >
+                          isActive
+                            ? "text-blue-700 bg-blue-50/80 border-l-2 border-blue-600"
+                            : "text-gray-600"
+                        )}>
                         <Icon className="h-4 w-4" />
                         {name}
                       </Button>
                     </Link>
-                  )
+                  );
                 })}
 
                 <div className="pt-4 mt-4 border-t border-gray-200/60 space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-center text-sm font-medium border-gray-300 bg-transparent"
-                    style={{ backgroundColor: "#ffffff", color: "#374151" }}
-                  >
-                    Sign In
-                  </Button>
-                  <Button
-                    className="w-full justify-center text-sm font-medium"
-                    style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "#1d4ed8"
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "#2563eb"
-                    }}
-                  >
-                    Get Started
-                  </Button>
+                  {userRole === "" ? (
+                    <Button
+                      onClick={() => router.push("/auth")}
+                      variant="outline"
+                      className="w-full justify-center text-sm font-medium border-gray-300 bg-transparent"
+                      style={{ backgroundColor: "#ffffff", color: "#374151" }}>
+                      Sign In
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleLogout()}
+                      variant="outline"
+                      className="w-full justify-center text-sm font-medium border-gray-300 bg-transparent"
+                      style={{ backgroundColor: "#ffffff", color: "#374151" }}>
+                      Log Out
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -217,7 +252,12 @@ export function Navbar() {
         </div>
       </nav>
 
-      <div className={cn("transition-all duration-500", isScrolled ? "h-16" : "h-20")} />
+      <div
+        className={cn(
+          "transition-all duration-500",
+          isScrolled ? "h-16" : "h-20"
+        )}
+      />
     </>
-  )
+  );
 }
