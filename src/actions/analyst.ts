@@ -1,18 +1,18 @@
 // src/actions/analyst.ts
-"use server"
+"use server";
 
-import { revalidatePath } from "next/cache"
-import { prisma } from "@/lib/prisma" // Corrected: Using 'prisma' from your file
-import { getCurrentUser } from "@/lib/session" // Using our new session function
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 
-// 1. Action to fetch all reports that are pending review
+/**
+ * Fetches all reports with a 'pending' status.
+ * Only accessible by users with the 'analyst' or 'admin' role.
+ */
 export async function getPendingReports() {
-  const user = await getCurrentUser()
-
-  // Authorization: Only analysts and admins can perform this action
+  const user = await getCurrentUser();
   if (user?.role !== "analyst" && user?.role !== "admin") {
-    // Changed to return an error object for the UI to handle gracefully
-    return { error: "Unauthorized: You do not have permission to view reports." }
+    return { error: "Unauthorized: You do not have permission to view reports." };
   }
 
   try {
@@ -28,30 +28,65 @@ export async function getPendingReports() {
       orderBy: {
         submittedAt: "asc",
       },
-    })
-    return { reports }
+    });
+    return { reports };
   } catch (error) {
-    console.error("Failed to fetch pending reports:", error)
-    return { error: "Could not fetch reports." }
+    console.error("Failed to fetch pending reports:", error);
+    return { error: "Database error: Could not fetch reports." };
   }
 }
 
-// 2. Action to approve or reject a report
+/**
+ * Fetches a single report by its ID.
+ * Only accessible by users with the 'analyst' or 'admin' role.
+ */
+export async function getReportById(reportId: string) {
+  const user = await getCurrentUser();
+  if (user?.role !== "analyst" && user?.role !== "admin") {
+    return { error: "Unauthorized" };
+  }
+
+  try {
+    const report = await prisma.report.findUnique({
+      where: {
+        id: reportId,
+      },
+      include: {
+        user: {
+          select: { name: true, email: true },
+        },
+      },
+    });
+
+    if (!report) {
+      return { error: "Report not found." };
+    }
+
+    return { report };
+  } catch (error) {
+    console.error("Failed to fetch report by ID:", error);
+    return { error: "Database error." };
+  }
+}
+
 interface UpdateReportArgs {
-  reportId: string
-  verdict: "verified" | "rejected"
-  severity: number
-  note?: string
+  reportId: string;
+  verdict: "verified" | "rejected";
+  severity: number;
+  note?: string;
 }
 
+/**
+ * Updates a report's status and severity. Creates a validation record.
+ * Only accessible by users with the 'analyst' or 'admin' role.
+ */
 export async function updateReportStatus(args: UpdateReportArgs) {
-  const user = await getCurrentUser()
-
+  const user = await getCurrentUser();
   if (!user || (user.role !== "analyst" && user.role !== "admin")) {
-    return { error: "Unauthorized: You do not have permission to update reports." }
+    return { error: "Unauthorized: You do not have permission to update reports." };
   }
 
-  const { reportId, verdict, severity, note } = args
+  const { reportId, verdict, severity, note } = args;
 
   try {
     const updatedReport = await prisma.$transaction(async (tx) => {
@@ -61,7 +96,7 @@ export async function updateReportStatus(args: UpdateReportArgs) {
           status: verdict,
           severity: severity,
         },
-      })
+      });
 
       await tx.reportValidation.create({
         data: {
@@ -70,16 +105,17 @@ export async function updateReportStatus(args: UpdateReportArgs) {
           verdict: verdict === "verified" ? "true" : "false",
           note: note || `Report ${verdict} by analyst.`,
         },
-      })
+      });
 
-      return report
-    })
+      return report;
+    });
 
-    revalidatePath("/analyst")
+    revalidatePath("/analyst");
+    revalidatePath(`/analyst/report/${reportId}`);
 
-    return { success: true, updatedReport }
+    return { success: true, updatedReport };
   } catch (error) {
-    console.error("Failed to update report status:", error)
-    return { error: "Could not update the report." }
+    console.error("Failed to update report status:", error);
+    return { error: "Database error: Could not update the report." };
   }
 }

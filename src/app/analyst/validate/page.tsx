@@ -8,7 +8,7 @@ export default async function AnalystPage() {
   // 1. Secure the page on the server
   const user = await getCurrentUser()
   if (!user || (user.role !== "analyst" && user.role !== "admin")) {
-    redirect("/login") // Or your designated "unauthorized" page
+    redirect("/auth") // Or your designated "unauthorized" page
   }
 
   // 2. Fetch the reports
@@ -18,7 +18,7 @@ export default async function AnalystPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="text-3xl font-bold mb-6">Analyst Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-6">Analyst validate</h1>
         <p className="text-red-500 bg-red-100 p-4 rounded-md">{error}</p>
       </div>
     )
@@ -27,7 +27,7 @@ export default async function AnalystPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 border-b pb-4">
-        <h1 className="text-4xl font-bold tracking-tight">Analyst Dashboard</h1>
+        <h1 className="text-4xl font-bold tracking-tight">Analyst Validate</h1>
         <p className="text-muted-foreground mt-1">
           Review, verify, and assign severity to pending reports.
         </p>

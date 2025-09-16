@@ -1,47 +1,50 @@
 // src/lib/session.ts
-import { cookies } from "next/headers"
-import jwt from "jsonwebtoken"
-import { prisma } from "./prisma" // Using your prisma export
-import type { RoleName } from "../../generated/prisma"
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+import { prisma } from "./prisma";
+import type { RoleName } from "../../generated/prisma";
 
-// This is the shape of the data we'll encode in the JWT
-interface UserPayload {
-  id: string
-  name: string
-  email: string
-  role: RoleName
+// Define the shape of the user object we expect from the session
+export interface AuthUser {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: RoleName;
+  isActive: boolean;
 }
 
-export async function getCurrentUser() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get("accessToken")?.value
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("accessToken")?.value;
 
+  // 1. If no token exists, the user is not logged in.
   if (!token) {
-    return null
+    return null;
   }
 
   try {
-    // Verify the token and decode its payload
+    // 2. Verify the token is valid and not expired.
     const decoded = jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET!
-    ) as UserPayload
+    ) as { id: string };
 
-    // Optional but recommended: Check if the user still exists in the database
+    // 3. Check that the user exists in the database and is still active.
+    // This is a crucial security check.
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { id: decoded.id, isActive: true },
       select: { id: true, name: true, email: true, role: true, isActive: true },
-    })
+    });
 
-    // If user doesn't exist or is inactive, invalidate the session
-    if (!user || !user.isActive) {
-      return null
+    // 4. If the user is not found or inactive, they are not authenticated.
+    if (!user) {
+      return null;
     }
 
-    return user
+    return user;
   } catch (error) {
-    // If token is invalid or expired, return null
-    console.error("Authentication error:", error)
-    return null
+    // 5. If the token is malformed or expired, verification will fail.
+    console.error("Invalid access token:", error);
+    return null;
   }
 }
