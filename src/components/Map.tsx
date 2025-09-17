@@ -44,13 +44,21 @@ export default function Map3D() {
       center: [78.9629, 20.5937], // India center
       zoom: 4.5,
       pitch: 60,
-      maxBounds: indiaBounds, // Lock map to India
+      // maxBounds: indiaBounds, // Lock map to India
       minZoom: 4,
       maxZoom: 10,
       canvasContextAttributes: { antialias: true },
     });
 
     mapRef.current.addControl(new maplibregl.NavigationControl(), "top-right");
+
+    mapRef.current.on("style.load", () => {
+      mapRef.current!.getStyle().layers?.forEach((layer) => {
+        if (layer.type === "symbol" && layer.id.includes("country")) {
+          mapRef.current!.setFilter(layer.id, ["==", ["get", "name"], "India"]);
+        }
+      });
+    });
 
     // Model parameters (center of India)
     const modelOrigin: [number, number] = [78.9629, 20.5937];

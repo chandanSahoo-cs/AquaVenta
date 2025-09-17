@@ -14,7 +14,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
- enum RoleName {
+enum RoleName {
   citizen
   analyst
   admin

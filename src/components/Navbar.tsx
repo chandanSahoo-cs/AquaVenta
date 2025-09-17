@@ -18,7 +18,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { RoleName } from "../../generated/prisma";
+import { RoleName } from "../../generated/prisma"
 
 export function Navbar() {
   const [userRole, setUserRole] = useState<RoleName | string>("");
