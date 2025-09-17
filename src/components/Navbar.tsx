@@ -37,9 +37,9 @@ export function Navbar() {
     },
     {
       icon: Upload,
-      name: "Reports",
+      name: "Upload",
       role: RoleName.citizen,
-      href: "/user/reports",
+      href: "/user/upload",
     },
     {
       icon: Map,
