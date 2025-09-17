@@ -1,4 +1,5 @@
-import IndiaMapToggle from "@/components/Map2";
+// import IndiaMap from "@/components/ResearchMap";
+import IndiaMap from "@/components/Map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,13 +21,12 @@ import {
   Users,
   Waves,
 } from "lucide-react";
-// import IndiaMapToggle from "@/components/india-map-toggle"
 
 export default function INCOISLandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="py-20">
+      <section className="py-10">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Mission & Branding */}
@@ -65,30 +65,6 @@ export default function INCOISLandingPage() {
                   View Live Map
                 </Button>
               </div>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-6 pt-8 border-t border-border">
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-primary">
-                    24/7
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Monitoring
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-primary">
-                    7,500km
-                  </div>
-                  <div className="text-sm text-muted-foreground">Coastline</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-primary">
-                    50K+
-                  </div>
-                  <div className="text-sm text-muted-foreground">Reports</div>
-                </div>
-              </div>
             </div>
 
             {/* Right: Interactive Map */}
@@ -104,7 +80,8 @@ export default function INCOISLandingPage() {
               </CardHeader>
               <CardContent>
                 <div className="h-96 rounded-md overflow-hidden border border-border">
-                  <IndiaMapToggle />
+                  {/* <IndiaMap /> */}
+                  <IndiaMap mapType="publicMap" />
                 </div>
               </CardContent>
             </Card>
