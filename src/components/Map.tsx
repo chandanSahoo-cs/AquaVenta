@@ -1,176 +1,535 @@
-// @ts-nocheck
 "use client";
 
-import maplibregl, { Map as MapType, MercatorCoordinate } from "maplibre-gl";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import {
+  Calendar,
+  Check,
+  ChevronRight,
+  Database,
+  Layers3,
+  X,
+  XIcon,
+} from "lucide-react";
+import maplibregl, { type Map as MapType } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useRef } from "react";
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
+import { Label } from "./ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Slider } from "./ui/slider";
 
-type Report = {
-  id: string;
-  lat: number;
-  lng: number;
-  type: string;
+// ------------------------- CONFIG -------------------------
+const styles: Record<string, string> = {
+  Streets: `https://api.maptiler.com/maps/streets/style.json?key=POOqd5CTm1rNBESonueD`,
+  Dark: `https://api.maptiler.com/maps/darkmatter/style.json?key=POOqd5CTm1rNBESonueD`,
+  Satellite: `https://api.maptiler.com/maps/hybrid/style.json?key=POOqd5CTm1rNBESonueD`,
+  Light: `https://api.maptiler.com/maps/positron/style.json?key=POOqd5CTm1rNBESonueD`,
 };
 
-// Demo hazard reports
-const demoReports: Report[] = [
-  { id: "1", lat: 19.076, lng: 72.8777, type: "High Waves" }, // Mumbai
-  { id: "2", lat: 13.0827, lng: 80.2707, type: "Flooding" }, // Chennai
-  { id: "3", lat: 8.52, lng: 92.43, type: "Flooding" }, // Chennai
-  // "latitude": 8.52,
-  // "longitude": 92.43,
-  //   { id: "3", lat: 8.5241, lng: 76.9366, type: "Swell Surge" }, // Kerala
+// Bounds for India (SW corner, NE corner)
+const indiaBounds: [[number, number], [number, number]] = [
+  [40.0, -5.0],
+  [125.0, 45.0],
 ];
 
-export default function Map3D() {
+const researchDatasets = {
+  events: {
+    name: "Tsunami Events",
+    url: "https://www.ngdc.noaa.gov/hazel/hazard-service/api/v1/tsunamis/events?country=INDIA",
+    color: "#dc2626", // red
+  },
+  deposits: {
+    name: "Tsunami Deposits",
+    url: "https://www.ngdc.noaa.gov/hazel/hazard-service/api/v1/tsunamis/deposits?country=INDIA",
+    color: "#16a34a", // green
+  },
+  runups: {
+    name: "Tsunami Runups",
+    url: "https://www.ngdc.noaa.gov/hazel/hazard-service/api/v1/tsunamis/runups?country=INDIA",
+    color: "#0ea5e9", // blue
+  },
+};
+
+const reportDatasets = {
+  past90days: {
+    name: "Past 90 Days (INCOIS)",
+    url: "/api/tsunami",
+    color: "#F5E727", // yellow
+  },
+};
+
+// ------------------------- FETCH HELPERS -------------------------
+async function fetchAllFromResearchDataset(baseUrl: string) {
+  let page = 1;
+  let totalPages = 1;
+  const all: any[] = [];
+
+  while (page <= totalPages) {
+    const res = await fetch(`${baseUrl}&page=${page}`);
+    if (!res.ok) {
+      toast.error("Failed to fetch research dataset");
+      break;
+    }
+    const data = await res.json();
+
+    if (Array.isArray(data.items)) all.push(...data.items);
+    totalPages = data.totalPages ?? 1;
+    page++;
+  }
+  return all;
+}
+
+async function fetchAllFromReportDataset(baseUrl: string) {
+  const res = await fetch(baseUrl);
+  if (!res.ok) {
+    toast.error("Failed to fetch report dataset");
+    return [];
+  }
+  const data = await res.json();
+  return data.datasets ?? [];
+}
+
+interface IndiaMapProps {
+  mapType: "publicMap" | "researchMap";
+}
+
+// ------------------------- MAP COMPONENT -------------------------
+export default function IndiaMap({ mapType }: IndiaMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapType | null>(null);
 
+  const [mapStyle, setMapStyle] = useState(styles.Streets);
+  const [is3D, setIs3D] = useState(false);
+  const [selectedDatasets, setSelectedDatasets] = useState<string[]>([]);
+  const [isMinimize, setIsMinimize] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const currentYear = new Date().getFullYear();
+  const [yearRange, setYearRange] = useState([1900, currentYear]);
+
+  const markersRef = useRef<Record<string, maplibregl.Marker[]>>({});
+  const cachedDataRef = useRef<Record<string, any[]>>({});
+
+  // ------------------------- DATA LOADING -------------------------
   useEffect(() => {
-    if (mapRef.current || !mapContainer.current) return;
-
-    // India bounding box (approx)
-    const indiaBounds: [[number, number], [number, number]] = [
-      [68.0, 6.5], // SW corner (lng, lat)
-      [97.4, 35.5], // NE corner (lng, lat)
-    ];
-
-    // Initialize MapLibre focused on India
-    mapRef.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: "https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json", // Dark style
-      center: [78.9629, 20.5937], // India center
-      zoom: 4.5,
-      pitch: 60,
-      // maxBounds: indiaBounds, // Lock map to India
-      minZoom: 4,
-      maxZoom: 10,
-      canvasContextAttributes: { antialias: true },
-    });
-
-    mapRef.current.addControl(new maplibregl.NavigationControl(), "top-right");
-
-    mapRef.current.on("style.load", () => {
-      mapRef.current!.getStyle().layers?.forEach((layer) => {
-        if (layer.type === "symbol" && layer.id.includes("country")) {
-          mapRef.current!.setFilter(layer.id, ["==", ["get", "name"], "India"]);
-        }
-      });
-    });
-
-    // Model parameters (center of India)
-    const modelOrigin: [number, number] = [78.9629, 20.5937];
-    const modelAltitude = 0;
-    const modelRotate: [number, number, number] = [Math.PI / 2, 0, 0];
-
-    const modelAsMercatorCoordinate: MercatorCoordinate =
-      MercatorCoordinate.fromLngLat(modelOrigin, modelAltitude);
-
-    const modelTransform = {
-      translateX: modelAsMercatorCoordinate.x,
-      translateY: modelAsMercatorCoordinate.y,
-      translateZ: modelAsMercatorCoordinate.z,
-      rotateX: modelRotate[0],
-      rotateY: modelRotate[1],
-      rotateZ: modelRotate[2],
-      scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits(),
-    };
-
-    // 3D custom layer
-    const customLayer: maplibregl.CustomLayerInterface = {
-      id: "3d-model",
-      type: "custom",
-      renderingMode: "3d",
-      onAdd: function (map, gl) {
-        this.camera = new THREE.Camera();
-        this.scene = new THREE.Scene();
-
-        // Lights
-        const light1 = new THREE.DirectionalLight(0xffffff);
-        light1.position.set(0, -70, 100).normalize();
-        this.scene.add(light1);
-
-        const light2 = new THREE.DirectionalLight(0xffffff);
-        light2.position.set(0, 70, 100).normalize();
-        this.scene.add(light2);
-
-        // Load GLTF model
-        const loader = new GLTFLoader();
-        loader.load(
-          "https://maplibre.org/maplibre-gl-js/docs/assets/34M_17/34M_17.gltf",
-          (gltf) => {
-            this.scene.add(gltf.scene);
+    const loadAllData = async () => {
+      try {
+        const researchPromises = Object.entries(researchDatasets).map(
+          async ([key, dataset]) => {
+            cachedDataRef.current[key] = await fetchAllFromResearchDataset(
+              dataset.url
+            );
           }
         );
 
-        this.map = map;
-        this.renderer = new THREE.WebGLRenderer({
-          canvas: map.getCanvas(),
-          context: gl,
-          antialias: true,
-        });
-        this.renderer.autoClear = false;
-      },
-      render: function (gl, matrix) {
-        const rotationX = new THREE.Matrix4().makeRotationAxis(
-          new THREE.Vector3(1, 0, 0),
-          modelTransform.rotateX
-        );
-        const rotationY = new THREE.Matrix4().makeRotationAxis(
-          new THREE.Vector3(0, 1, 0),
-          modelTransform.rotateY
-        );
-        const rotationZ = new THREE.Matrix4().makeRotationAxis(
-          new THREE.Vector3(0, 0, 1),
-          modelTransform.rotateZ
+        const reportPromises = Object.entries(reportDatasets).map(
+          async ([key, dataset]) => {
+            cachedDataRef.current[key] = await fetchAllFromReportDataset(
+              dataset.url
+            );
+          }
         );
 
-        const m = new THREE.Matrix4().fromArray(
-          matrix.defaultProjectionData.mainMatrix
-        );
-        const l = new THREE.Matrix4()
-          .makeTranslation(
-            modelTransform.translateX,
-            modelTransform.translateY,
-            modelTransform.translateZ
-          )
-          .scale(
-            new THREE.Vector3(
-              modelTransform.scale,
-              -modelTransform.scale,
-              modelTransform.scale
-            )
-          )
-          .multiply(rotationX)
-          .multiply(rotationY)
-          .multiply(rotationZ);
-
-        this.camera.projectionMatrix = m.multiply(l);
-        this.renderer.resetState();
-        this.renderer.render(this.scene, this.camera);
-        this.map.triggerRepaint();
-      },
+        await Promise.all([...researchPromises, ...reportPromises]);
+        setIsDataLoaded(true);
+      } catch (error) {
+        console.error("Failed to load tsunami data:", error);
+      }
     };
 
-    mapRef.current.on("style.load", () => {
-      mapRef.current!.addLayer(customLayer);
-
-      // Add demo markers
-      demoReports.forEach((report) => {
-        const el = document.createElement("div");
-        el.className = "text-white px-2 py-1 rounded text-xs shadow";
-        el.textContent = report.type;
-
-        new maplibregl.Marker(el)
-          .setLngLat([report.lng, report.lat] as [number, number])
-          .addTo(mapRef.current!);
-      });
-    });
+    loadAllData();
   }, []);
 
+  // ------------------------- MAP INITIALIZATION -------------------------
+  useEffect(() => {
+    if (!mapContainer.current) return;
+
+    if (mapRef.current) {
+      try {
+        mapRef.current.remove();
+      } catch {}
+      mapRef.current = null;
+    }
+
+    const map = new maplibregl.Map({
+      container: mapContainer.current,
+      style: mapStyle,
+      center: [78.9629, 20.5937],
+      zoom: 3.5,
+      minZoom: 3,
+      maxBounds: indiaBounds,
+      pitch: is3D ? 60 : 0,
+      bearing: is3D ? -20 : 0,
+    });
+
+    mapRef.current = map;
+
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(new maplibregl.FullscreenControl(), "top-right");
+
+    map.on("load", () => {
+      if (is3D) {
+        if (map.getSource("composite")) {
+          map.addLayer({
+            id: "3d-buildings",
+            source: "composite",
+            "source-layer": "building",
+            type: "fill-extrusion",
+            minzoom: 15,
+            paint: {
+              "fill-extrusion-color": "#aaa",
+              "fill-extrusion-height": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                15,
+                0,
+                16,
+                ["get", "render_height"],
+              ],
+              "fill-extrusion-base": ["get", "render_min_height"],
+              "fill-extrusion-opacity": 0.7,
+            },
+          });
+        }
+      }
+
+      map.fitBounds(indiaBounds, { padding: 20, duration: 1500 });
+
+      if (selectedDatasets.length > 0 && isDataLoaded) {
+        selectedDatasets.forEach((datasetKey) => addMarkersToMap(datasetKey));
+      }
+    });
+
+    return () => {
+      if (mapRef.current) {
+        try {
+          mapRef.current.remove();
+        } catch {}
+        mapRef.current = null;
+      }
+    };
+  }, [mapStyle, is3D]);
+
+  useEffect(() => {
+    console.log("hello from effect");
+    if (mapType == "publicMap") {
+      if (selectedDatasets.includes("past90days")) return;
+      // setSelectedDatasets()
+      toggleDataset("past90days");
+      // addMarkersToMap("past90days");
+    }
+  }, [isDataLoaded, selectedDatasets]);
+
+  // ------------------------- MARKERS -------------------------
+  const addMarkersToMap = (datasetKey: string) => {
+    const map = mapRef.current;
+    if (!map || !cachedDataRef.current[datasetKey]) return;
+
+    if (markersRef.current[datasetKey]) {
+      markersRef.current[datasetKey].forEach((m) => m.remove());
+    }
+
+    const dataset =
+      researchDatasets[datasetKey as keyof typeof researchDatasets] ||
+      reportDatasets[datasetKey as keyof typeof reportDatasets];
+
+    const color = dataset.color;
+    const cachedData = cachedDataRef.current[datasetKey];
+    console.log(
+      "Cached data for",
+      datasetKey,
+      cachedDataRef.current[datasetKey]
+    );
+
+    let filteredData = cachedData;
+
+    if (researchDatasets[datasetKey as keyof typeof researchDatasets]) {
+      filteredData = cachedData.filter((event) => {
+        const eventYear = event.year;
+        return eventYear >= yearRange[0] && eventYear <= yearRange[1];
+      });
+    }
+
+    const markers = filteredData
+      .filter((e) => e.latitude || e.LATITUDE)
+      .map((event) => {
+        const lat = parseFloat(event.latitude ?? event.LATITUDE);
+        const lng = parseFloat(event.longitude ?? event.LONGITUDE);
+
+        const markerElement = document.createElement("div");
+        markerElement.style.backgroundColor = color;
+        markerElement.style.width = is3D ? "16px" : "12px";
+        markerElement.style.height = is3D ? "16px" : "12px";
+        markerElement.style.borderRadius = "50%";
+        markerElement.style.border = "2px solid white";
+        markerElement.style.boxShadow = is3D
+          ? "0 6px 12px rgba(0,0,0,0.4)"
+          : "0 3px 6px rgba(0,0,0,0.3)";
+
+        return new maplibregl.Marker({ element: markerElement })
+          .setLngLat([lng, lat])
+          .setPopup(
+            new maplibregl.Popup({ offset: 25 }).setHTML(`
+              <div class="text-sm">
+                <strong>${
+                  event.locationName || event.REGIONNAME || "Unknown"
+                }</strong><br/>
+                ${event.year ? `Year: ${event.year}<br/>` : ""}
+                ${
+                  event.magnitude || event.MAGNITUDE
+                    ? `Magnitude: ${event.magnitude ?? event.MAGNITUDE}<br/>`
+                    : ""
+                }
+                ${
+                  event.runupHeight
+                    ? `Runup Height: ${event.runupHeight}m<br/>`
+                    : ""
+                }
+                ${
+                  event.ORIGINTIME
+                    ? `Origin Time: ${event.ORIGINTIME}<br/>`
+                    : ""
+                }
+                ${event.DEPTH ? `Depth: ${event.DEPTH} km<br/>` : ""}
+              </div>
+            `)
+          )
+          .addTo(map);
+      });
+
+    markersRef.current[datasetKey] = markers;
+
+    console.log(markersRef.current[datasetKey]);
+  };
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
+
+    Object.values(markersRef.current).forEach((markers) =>
+      markers.forEach((m) => m.remove())
+    );
+    markersRef.current = {};
+
+    selectedDatasets.forEach((datasetKey) => {
+      addMarkersToMap(datasetKey);
+    });
+  }, [selectedDatasets, yearRange, is3D, isDataLoaded, mapStyle]);
+
+  // ------------------------- UI HELPERS -------------------------
+  const toggleDataset = (datasetKey: string) => {
+    console.log(datasetKey);
+    setSelectedDatasets((prev) =>
+      prev.includes(datasetKey)
+        ? prev.filter((key) => key !== datasetKey)
+        : [...prev, datasetKey]
+    );
+    console.log(selectedDatasets);
+    console.log("Hello");
+  };
+
+  const clearAllDatasets = () => {
+    setSelectedDatasets([]);
+  };
+
+  // ------------------------- RENDER -------------------------
   return (
-    <div ref={mapContainer} className="w-full h-[600px] rounded-lg border" />
+    <div className="w-full h-[700px] relative">
+      {mapType == "researchMap" && (
+        <Card className="absolute top-4 left-4 z-10 bg-card/95 backdrop-blur-md border-border shadow-enterprise p-2">
+          <Button
+            className={cn(
+              "bg-transparent text-primary shadow-none w-8 hover:bg-muted ml-auto z-10",
+              !isMinimize && "rounded-full"
+            )}
+            onClick={() => setIsMinimize((prev) => !prev)}>
+            {!isMinimize ? <XIcon /> : <ChevronRight />}
+          </Button>
+          {!isMinimize && (
+            <div className="p-4 space-y-2 min-w-[200px] -mt-9">
+              {/* Map Style & 3D Toggle */}
+              <div className="flex items-center gap-3">
+                <Select value={mapStyle} onValueChange={setMapStyle}>
+                  <SelectTrigger className="w-32 border-border focus:ring-ring">
+                    <SelectValue placeholder="Select style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(styles).map(([name, url]) => (
+                      <SelectItem key={name} value={url}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  onClick={() => setIs3D((prev) => !prev)}
+                  variant={is3D ? "default" : "outline"}
+                  size="sm"
+                  className="transition-all duration-200 shadow-enterprise hover:shadow-enterprise-lg">
+                  <Layers3 className="h-4 w-4 mr-2" />
+                  {is3D ? "2D View" : "3D View"}
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-medium text-foreground">
+                    Tsunami Data {!isDataLoaded && "(Loading...)"}
+                  </Label>
+                </div>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start border-border focus:ring-ring bg-transparent"
+                      disabled={!isDataLoaded}>
+                      {selectedDatasets.length === 0 ? (
+                        "Select datasets..."
+                      ) : (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {selectedDatasets.slice(0, 2).map((key) => (
+                            <Badge
+                              key={key}
+                              variant="secondary"
+                              className="text-xs">
+                              {researchDatasets[
+                                key as keyof typeof researchDatasets
+                              ]?.name ??
+                                reportDatasets[
+                                  key as keyof typeof reportDatasets
+                                ]?.name}
+                            </Badge>
+                          ))}
+                          {selectedDatasets.length > 2 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{selectedDatasets.length - 2} more
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="start">
+                    <div className="p-3 border-b border-border">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">Select Datasets</h4>
+                        {selectedDatasets.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearAllDatasets}
+                            className="h-auto p-1 text-xs">
+                            Clear All
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-2">
+                      {Object.entries({
+                        ...researchDatasets,
+                        ...reportDatasets,
+                      }).map(([key, dataset]) => (
+                        <div
+                          key={key}
+                          className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
+                          onClick={() => {
+                            console.log("key: ", key);
+                            toggleDataset(key);
+                          }}>
+                          <div className="flex items-center space-x-2 flex-1">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: dataset.color }}
+                            />
+                            <span className="text-sm">{dataset.name}</span>
+                          </div>
+                          {selectedDatasets.includes(key) && (
+                            <Check className="h-4 w-4 text-primary" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {selectedDatasets.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {selectedDatasets.map((key) => (
+                      <Badge
+                        onClick={() => toggleDataset(key)}
+                        key={key}
+                        variant="secondary"
+                        className="text-xs flex items-center gap-1 cursor-pointer hover:bg-muted">
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{
+                            backgroundColor:
+                              researchDatasets[
+                                key as keyof typeof researchDatasets
+                              ]?.color ??
+                              reportDatasets[key as keyof typeof reportDatasets]
+                                ?.color,
+                          }}
+                        />
+                        {researchDatasets[key as keyof typeof researchDatasets]
+                          ?.name ??
+                          reportDatasets[key as keyof typeof reportDatasets]
+                            ?.name}
+                        <X className="h-3 w-3 cursor-pointer hover:text-destructive" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Year Range only for Research datasets */}
+                {selectedDatasets.some((d) => d in researchDatasets) && (
+                  <div className="space-y-3 pt-3 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <Label className="text-sm font-medium text-foreground">
+                        Year Range: {yearRange[0]} - {yearRange[1]}
+                      </Label>
+                    </div>
+
+                    <div className="px-2">
+                      <Slider
+                        value={yearRange}
+                        onValueChange={setYearRange}
+                        min={1900}
+                        max={currentYear}
+                        step={1}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>1900</span>
+                        <span>{currentYear}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      <div
+        ref={mapContainer}
+        className="w-full h-full rounded-xl border border-border shadow-enterprise overflow-hidden"
+      />
+    </div>
   );
 }

@@ -1,4 +1,5 @@
-import IndiaMapToggle from "@/components/Map2";
+// import IndiaMap from "@/components/ResearchMap";
+import IndiaMap from "@/components/Map";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,55 +21,12 @@ import {
   Users,
   Waves,
 } from "lucide-react";
-// import IndiaMapToggle from "@/components/india-map-toggle"
 
 export default function INCOISLandingPage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center">
-                <Waves className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-foreground">
-                  INCOIS
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  Ocean Information Services
-                </p>
-              </div>
-            </div>
-            <nav className="hidden md:flex items-center space-x-6">
-              <a
-                href="#features"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </a>
-              <a
-                href="#how-it-works"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                How It Works
-              </a>
-              <a
-                href="#impact"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Impact
-              </a>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Report Hazard
-              </Button>
-            </nav>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
-      <section className="py-20">
+      <section className="py-10">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Mission & Branding */}
@@ -107,30 +65,6 @@ export default function INCOISLandingPage() {
                   View Live Map
                 </Button>
               </div>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-6 pt-8 border-t border-border">
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-primary">
-                    24/7
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Monitoring
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-primary">
-                    7,500km
-                  </div>
-                  <div className="text-sm text-muted-foreground">Coastline</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-semibold text-primary">
-                    50K+
-                  </div>
-                  <div className="text-sm text-muted-foreground">Reports</div>
-                </div>
-              </div>
             </div>
 
             {/* Right: Interactive Map */}
@@ -146,7 +80,8 @@ export default function INCOISLandingPage() {
               </CardHeader>
               <CardContent>
                 <div className="h-96 rounded-md overflow-hidden border border-border">
-                  <IndiaMapToggle />
+                  {/* <IndiaMap /> */}
+                  <IndiaMap mapType="publicMap" />
                 </div>
               </CardContent>
             </Card>
@@ -389,47 +324,6 @@ export default function INCOISLandingPage() {
         </div>
       </section>
 
-      {/* Impact Section */}
-      <section id="impact" className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center space-y-8">
-            <h2 className="text-4xl font-semibold text-foreground">
-              Our Collective Impact
-            </h2>
-            <div className="grid md:grid-cols-4 gap-8">
-              <div className="space-y-2">
-                <div className="text-4xl font-semibold text-primary">
-                  50,000+
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Hazard Reports Submitted
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-4xl font-semibold text-primary">
-                  2,500+
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Lives Potentially Saved
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-4xl font-semibold text-primary">15</div>
-                <div className="text-sm text-muted-foreground">
-                  Coastal States Covered
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-4xl font-semibold text-primary">24/7</div>
-                <div className="text-sm text-muted-foreground">
-                  Real-time Monitoring
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center space-y-8">
@@ -535,7 +429,7 @@ export default function INCOISLandingPage() {
 
           <div className="border-t border-border mt-8 pt-8 text-center">
             <p className="text-sm text-muted-foreground">
-              © 2024 Indian National Centre for Ocean Information Services. All
+              © 2025 Indian National Centre for Ocean Information Services. All
               rights reserved.
             </p>
           </div>
