@@ -267,7 +267,7 @@ const logoutUser = async () => {
     const payload = jwt.verify(
       accessToken,
       process.env.ACCESS_TOKEN_SECRET!
-    ) as any;
+    ) as jwt.JwtPayload;
     const userId = payload.id;
 
     if (!userId) {

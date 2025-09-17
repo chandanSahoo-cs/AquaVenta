@@ -31,6 +31,9 @@ model User {
   createdAt    DateTime  @default(now())
   lastLogin    DateTime?
 
+  photo        String?   // URL to user profile photo
+  location     String?   // User location
+
   reports       Report[]
   validations   ReportValidation[]
   auditLogs     AuditLog[]

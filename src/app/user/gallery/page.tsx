@@ -1,106 +1,171 @@
-import { getAllMedia } from "@/actions/media"
-import Link from "next/link"
-import { Report } from "../../../../generated/prisma"
-import Image from "next/image"
+"use client"
 
-type MediaItem = Report & {
+import { useEffect, useState } from "react"
+import { getAllVerifiedMedia } from "@/actions/media"
+import Image from "next/image"
+import { Card, CardContent, CardHeader} from "@/components/ui/card"
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Download, ExternalLink, Play } from "lucide-react"
+
+interface MediaItem {
+  id: string
+  media: string
+  status: string
+  severity: number
+  submittedAt: string | Date
+  category?: string | null
+  description?: string | null
+  location?: string | null
   user: {
     name: string | null
   } | null
 }
 
-export default async function GalleryPage() {
-  const media = await getAllMedia()
+export default function GalleryPage() {
+  const [media, setMedia] = useState<MediaItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // // Helper function to extract a readable filename from the Firebase URL
-  // const getFileNameFromUrl = (url: string) => {
-  //   try {
-  //     const path = new URL(url).pathname
-  //     const decodedPath = decodeURIComponent(path)
-  //     // The filename is the last part of the path after the last '/'
-  //     const fileNameWithFolder = decodedPath.substring(decodedPath.lastIndexOf("/") + 1)
-  //     // Remove the folder prefix if it exists (e.g., 'media/')
-  //     return fileNameWithFolder.substring(fileNameWithFolder.lastIndexOf("/") + 1)
-  //   } catch (_e) {
-  //     return "media_file" // Fallback name
-  //   }
-  // }
+  useEffect(() => {
+    const loadMedia = async () => {
+      setIsLoading(true)
+      try {
+        const result = await getAllVerifiedMedia()
+        setMedia(result as MediaItem[])
+      } catch (error) {
+        console.error("Failed to load gallery media:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadMedia()
+  }, [])
+
+  const isVideo = (url: string) => {
+    const cleanUrl = url ? url.split("?")[0] : ""
+    return cleanUrl && /\.(mp4|webm|mov|ogg|avi)$/i.test(cleanUrl)
+  }
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <div className="card shadow-enterprise-lg max-w-6xl mx-auto">
-        <div className="card-header text-center">
-          <div className="flex justify-center items-center relative">
-            <Link
-              href="/"
-              className="absolute left-0 bg-secondary text-secondary-foreground py-2 px-4 rounded-md hover:bg-secondary/80 transition-colors font-semibold"
-            >
-              Home
-            </Link>
-            <h1 className="text-4xl font-bold mb-2">Disaster Media Gallery</h1>
-            <Link
-              href="/upload"
-              className="absolute right-0 bg-primary text-primary-foreground py-2 px-4 rounded-md hover:bg-primary/80 transition-colors font-semibold"
-            >
-              Upload Media
-            </Link>
-          </div>
-          <p className="text-muted-foreground mb-4">
-            Browse community-shared disaster photos and videos.
+      <Card className="shadow-lg max-w-7xl mx-auto">
+        <CardHeader className="text-center">
+          <h1 className="text-4xl font-bold mb-2">Media Gallery</h1>
+          <p className="text-muted-foreground">
+            Browse community-shared and verified disaster photos and videos.
           </p>
-        </div>
-        <div className="card-content">
-          {media.length === 0 ? (
-            <div className="alert alert-info text-center">
-              No media uploaded yet.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {(media as MediaItem[]).map((item) => (
-                <div key={item.id} className="card shadow-enterprise overflow-hidden">
-                  {/* Media Preview */}
-                  {item.media && (
-                    <div className="bg-muted/20">
-                      {/\.(mp4|webm|mov|ogg)$/i.test(item.media) ? (
-                        <video
-                          src={item.media}
-                          controls
-                          className="w-full h-56 object-cover bg-black"
-                        />
-                      ) : (
-                        <Image
-                          src={item.media}
-                          alt={item.description || "Disaster media"}
-                          width={0}
-                          height={0}
-                          sizes="100vw"
-                          className="w-auto h-auto max-w-full"
-                        />
-                      )}
-                    </div>
-                  )}
-                  <div className="p-4">
-                    {item.description && (
-                      <p className="text-foreground mt-1">{item.description}</p>
-                    )}
-                    {item.location && (
-                      <p className="text-sm text-muted-foreground mt-1">📍 {item.location}</p>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-3 sm:mt-0 sm:ml-4 text-left sm:text-right flex-shrink-0">
-                    <div>
-                      Uploaded by: <span className="font-semibold">{item.user?.name || "Anonymous"}</span>
-                    </div>
-                    <div>
-                      {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : ""}
-                    </div>
-                  </div>
-                </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-gray-200 rounded-lg aspect-video animate-pulse" />
               ))}
             </div>
+          ) : media.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No verified media has been uploaded yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {media.map((item) => {
+                const isVideoResult = isVideo(item.media)
+                return (
+                  <Dialog key={item.id}>
+                    <Card className="overflow-hidden">
+                      <DialogTrigger asChild>
+                        <div className="relative group cursor-pointer bg-gray-100 aspect-video">
+                          {isVideoResult ? (
+                            <>
+                              <video
+                                src={item.media}
+                                className="w-full h-full object-cover object-center bg-black"
+                                preload="metadata"
+                                muted
+                                playsInline
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity duration-300 group-hover:bg-black/40">
+                                <div className="bg-black/30 rounded-full p-3">
+                                  <Play className="w-8 h-8 text-white" />
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <Image
+                              src={item.media}
+                              alt={item.description || "Gallery media"}
+                              fill
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                              className="object-cover group-hover:scale-105 transition-transform"
+                            />
+                          )}
+                        </div>
+                      </DialogTrigger>
+                      <div className="p-4">
+                        <p className="font-semibold truncate">{item.description || "Untitled"}</p>
+                        <p className="text-sm text-muted-foreground">
+                          By {item.user?.name || "Anonymous"} on{" "}
+                          {new Date(item.submittedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </Card>
+                    <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+                      <DialogTitle className="sr-only">Media Preview</DialogTitle>
+                      <div className="relative">
+                        {isVideoResult ? (
+                          <video
+                            src={item.media}
+                            controls
+                            autoPlay
+                            className="w-full max-h-[70vh] object-contain"
+                          />
+                        ) : (
+                          <Image
+                            src={item.media}
+                            alt={item.description || "Gallery media"}
+                            width={1200}
+                            height={800}
+                            className="w-full max-h-[70vh] object-contain"
+                          />
+                        )}
+                        <div className="p-4 border-t">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-bold">{item.description || "Untitled"}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Uploaded by {item.user?.name || "Anonymous"}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                // Use asChild to make the button a link
+                              >
+                                <a href={item.media} download={`media-${item.id}`}>
+                                  <Download className="w-4 h-4 mr-1" />
+                                  Download
+                                </a>
+                              </Button>
+                              <Button variant="outline" size="sm" asChild>
+                                <a href={item.media} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="w-4 h-4 mr-1" />
+                                  Open
+                                </a>
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )
+              })}
+            </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
