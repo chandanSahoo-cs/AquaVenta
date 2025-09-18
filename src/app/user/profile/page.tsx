@@ -24,7 +24,6 @@ interface UserProfile {
   email: string | null
   phone: string | null
   photo: string | null
-  location: string | null
 }
 
 interface Submission {
@@ -43,7 +42,6 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [editedProfile, setEditedProfile] = useState<Partial<UserProfile>>({})
-  const [selectedMedia, setSelectedMedia] = useState<Submission | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
@@ -64,9 +62,7 @@ export default function ProfilePage() {
           (o.name === null || typeof o.name === "string") &&
           (o.email === null || typeof o.email === "string") &&
           (o.phone === null || typeof o.phone === "string") &&
-          (o.photo === null || typeof o.photo === "string") &&
-          (o.location === null || typeof o.location === "string")
-        )
+          (o.photo === null || typeof o.photo === "string")        )
       }
 
       if (profileResult.success && isUserProfile(profileResult.data)) {
@@ -106,8 +102,8 @@ export default function ProfilePage() {
     setIsSaving(true)
     try {
       // Build payload matching server expectation: only string values (no null)
-      const payload: { name?: string; email?: string; phone?: string; location?: string; photo?: string } = {}
-      const keys = ["name", "email", "phone", "location", "photo"] as const
+      const payload: { name?: string; email?: string; phone?: string; photo?: string } = {}
+      const keys = ["name", "email", "phone", "photo"] as const
 
       for (const k of keys) {
         if (Object.prototype.hasOwnProperty.call(editedProfile, k)) {
@@ -195,12 +191,6 @@ export default function ProfilePage() {
       default:
         return "bg-yellow-500"
     }
-  }
-
-  const getSeverityColor = (severity: number) => {
-    if (severity >= 8) return "bg-red-500"
-    if (severity >= 5) return "bg-orange-500"
-    return "bg-blue-500"
   }
 
   // use a clean URL check like submissions page (ignore query string when checking extension)
@@ -297,9 +287,6 @@ export default function ProfilePage() {
                             <Badge className={`${getStatusColor(submission.status)} text-white text-xs`}>
                               {submission.status}
                             </Badge>
-                            <Badge className={`${getSeverityColor(submission.severity)} text-white text-xs`}>
-                              {submission.severity}
-                            </Badge>
                           </div>
                         </div>
                       </DialogTrigger>
@@ -327,9 +314,6 @@ export default function ProfilePage() {
                               <div className="flex gap-2">
                                 <Badge className={`${getStatusColor(submission.status)} text-white`}>
                                   {submission.status}
-                                </Badge>
-                                <Badge className={`${getSeverityColor(submission.severity)} text-white`}>
-                                  Severity: {submission.severity}
                                 </Badge>
                                 {submission.category && <Badge variant="outline">{submission.category}</Badge>}
                               </div>
@@ -388,7 +372,7 @@ export default function ProfilePage() {
             {/* Profile Photo */}
             <div className="flex flex-col items-center space-y-4">
               <div className="relative group">
-                <Avatar className="w-32 h-32">
+                <Avatar className="w-50 h-50">
                   <AvatarImage
                     src={!isVideo(profile.photo || "") ? profile.photo || "/placeholder.svg" : "/placeholder.svg"}
                     alt={profile.name || "Profile"}
@@ -427,7 +411,7 @@ export default function ProfilePage() {
                     placeholder="Enter your name"
                   />
                 ) : (
-                  <p className="mt-1 text-sm text-gray-900">{profile.name || "Not provided"}</p>
+                  <p className="mt-1 text-lg text-gray-900">{profile.name || "Not provided"}</p>
                 )}
               </div>
 
@@ -442,7 +426,7 @@ export default function ProfilePage() {
                     placeholder="Enter your email"
                   />
                 ) : (
-                  <p className="mt-1 text-sm text-gray-900">{profile.email || "Not provided"}</p>
+                  <p className="mt-1 text-lg text-gray-900">{profile.email || "Not provided"}</p>
                 )}
               </div>
 
@@ -457,21 +441,7 @@ export default function ProfilePage() {
                     placeholder="Enter your phone number"
                   />
                 ) : (
-                  <p className="mt-1 text-sm text-gray-900">{profile.phone || "Not provided"}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="location">Location</Label>
-                {isEditing ? (
-                  <Input
-                    id="location"
-                    value={editedProfile.location || ""}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
-                    placeholder="Enter your location"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm text-gray-900">{profile.location || "Not provided"}</p>
+                  <p className="mt-1 text-lg text-gray-900">{profile.phone || "Not provided"}</p>
                 )}
               </div>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUserMedia } from "@/actions/media";
+import { getUserMedia, deleteReportFromDb } from "@/actions/media";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, Play } from "lucide-react";
+import { Download, ExternalLink, Play, Trash2 } from "lucide-react";
+import { LocationDisplay } from "@/components/LocationDisplay";
 
 // Define the Submission type based on what getUserMedia returns
 interface Submission {
@@ -23,7 +24,8 @@ interface Submission {
   submittedAt: string | Date;
   category?: string | null;
   description?: string | null;
-  location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export default function UserSubmissionsPage() {
@@ -65,10 +67,20 @@ export default function UserSubmissionsPage() {
     }
   };
 
-  const getSeverityColor = (severity: number) => {
-    if (severity >= 8) return "bg-red-500";
-    if (severity >= 5) return "bg-orange-500";
-    return "bg-blue-500";
+  const handleDelete = async (submissionId: string) => {
+    try {
+      if(!window.confirm("Are you sure you want to permanently delete this submission?")) {
+        return;
+      }
+      const result = await deleteReportFromDb(submissionId);
+      if (result.success){
+        setSubmissions((prev) => prev.filter((s) => s.id !== submissionId));
+      } else {
+        alert(`Failed to delete submission: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Failed to delete submission:", error);
+    }
   };
 
   const renderSubmissionGrid = (items: Submission[]) => {
@@ -133,13 +145,6 @@ export default function UserSubmissionsPage() {
                     >
                       {submission.status}
                     </Badge>
-                    <Badge
-                      className={`${getSeverityColor(
-                        submission.severity
-                      )} text-white text-xs`}
-                    >
-                      {submission.severity}
-                    </Badge>
                   </div>
                 </div>
               </DialogTrigger>
@@ -172,13 +177,6 @@ export default function UserSubmissionsPage() {
                         >
                           {submission.status}
                         </Badge>
-                        <Badge
-                          className={`${getSeverityColor(
-                            submission.severity
-                          )} text-white`}
-                        >
-                          Severity: {submission.severity}
-                        </Badge>
                         {submission.category && (
                           <Badge variant="outline">{submission.category}</Badge>
                         )}
@@ -207,6 +205,14 @@ export default function UserSubmissionsPage() {
                           <ExternalLink className="w-4 h-4 mr-1" />
                           Open
                         </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(submission.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </div>
                     <p className="text-sm text-gray-600">
@@ -216,6 +222,11 @@ export default function UserSubmissionsPage() {
                     {submission.description && (
                       <p className="text-sm mt-1">{submission.description}</p>
                     )}
+                    <LocationDisplay
+                    latitude={submission.latitude}
+                    longitude={submission.longitude}
+                    className="text-sm text-muted-foreground mt-1"
+                    />
                   </div>
                 </div>
               </DialogContent>

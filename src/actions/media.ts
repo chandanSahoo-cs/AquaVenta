@@ -7,11 +7,12 @@ import { giveUserPayload } from "./user.actions"
 export async function uploadMedia(formData: FormData) {
   try {
     const description = formData.get("description") as string
-    const location = formData.get("location") as string
     const fileUrl = formData.get("fileUrl") as string
+    const latitude = formData.get("latitude")
+    const longitude = formData.get("longitude")
 
-    const {userPresent,id} = await giveUserPayload();
-    if(!userPresent){
+    const { userPresent, id } = await giveUserPayload()
+    if (!userPresent) {
       throw new Error("User not present")
     }
     if (!fileUrl) {
@@ -21,11 +22,12 @@ export async function uploadMedia(formData: FormData) {
     const report = await prisma.report.create({
       data: {
         description: description || null,
-        location: location || null,
         userId: id,
         media: fileUrl,
         category: "media", // optional: use a category to distinguish media uploads
         // You can add more fields if needed, e.g. severity, language, etc.
+        latitude: latitude ? parseFloat(latitude as string) : null,
+        longitude: longitude ? parseFloat(longitude as string) : null,
       },
     })
 
@@ -150,5 +152,35 @@ export async function getRecentSubmissions(limit = 6) {
   } catch (error) {
     console.error("Failed to get recent submissions:", error)
     return { success: false, data: { error: (error as Error).message } }
+  }
+}
+
+export async function deleteReportFromDb(reportId: string){
+  try{
+
+    const { userPresent, id: userId } = await giveUserPayload()
+    if(!userPresent) {
+      throw new Error("User not present")
+    }
+
+    const deleteResult = await prisma.report.deleteMany({
+      where: {
+        id: reportId,
+        userId: userId,
+      },
+    })
+
+    if(deleteResult.count === 0){
+      throw new Error("Report not found or user not authorised")
+    }
+
+    revalidatePath("/user/submissions")
+    revalidatePath("/user/profile")
+
+    return { success: true }
+  }
+  catch (error) {
+    console.error("Failed to delete report:", error)
+    return { success: false, error: (error as Error).message }
   }
 }
