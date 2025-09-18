@@ -24,10 +24,44 @@ import { toast } from "sonner";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Slider } from "./ui/slider";
 
+import coastlineData from "@/data/india_coastline.json";
+import distance from "@turf/distance";
+import { point } from "@turf/helpers";
+import nearestPointOnLine from "@turf/nearest-point-on-line";
+import type { FeatureCollection, LineString } from "geojson";
+
+function isNearCoast(event: any, maxKm = 100) {
+  const coastline = coastlineData as FeatureCollection<LineString>;
+
+  const pt = point([
+    parseFloat(event.longitude ?? event.LONGITUDE),
+    parseFloat(event.latitude ?? event.LATITUDE),
+  ]);
+
+  let near = false;
+
+  coastline.features.forEach((feature) => {
+    const nearest = nearestPointOnLine(feature, pt);
+    // @ts-expect-error
+    const dist = distance(pt, nearest, { units: "kilometers" });
+    if (dist <= maxKm) {
+      near = true;
+    }
+  });
+
+  return near;
+}
 // ------------------------- CONFIG -------------------------
 const styles: Record<string, string> = {
   Streets: `https://api.maptiler.com/maps/streets/style.json?key=POOqd5CTm1rNBESonueD`,
@@ -66,6 +100,25 @@ const reportDatasets = {
     url: "/api/tsunami",
     color: "#F5E727", // yellow
   },
+};
+
+// ------------------------- HELPER FUNCTIONS -------------------------
+const formatPropertyName = (key: string): string => {
+  return (
+    key.replace(/^./, (c) => c.toUpperCase()).slice(0, 1) +
+    key
+      .slice(1)
+      .toLowerCase()
+      .replace(/([A-Z])/g, " $1") // Add space before capital letters
+      // .replace(/_/g, " ") // Replace underscores with spaces
+      .trim()
+  );
+};
+
+const formatPropertyValue = (value: any): string => {
+  if (value === null || value === undefined || value === "") return "N/A";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
 };
 
 // ------------------------- FETCH HELPERS -------------------------
@@ -119,6 +172,9 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
 
   const markersRef = useRef<Record<string, maplibregl.Marker[]>>({});
   const cachedDataRef = useRef<Record<string, any[]>>({});
+
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // ------------------------- DATA LOADING -------------------------
   useEffect(() => {
@@ -262,7 +318,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
     }
 
     const markers = filteredData
-      .filter((e) => e.latitude || e.LATITUDE)
+      .filter((e) => (e.latitude || e.LATITUDE) && isNearCoast(e))
       .map((event) => {
         const lat = parseFloat(event.latitude ?? event.LATITUDE);
         const lng = parseFloat(event.longitude ?? event.LONGITUDE);
@@ -277,35 +333,42 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
           ? "0 6px 12px rgba(0,0,0,0.4)"
           : "0 3px 6px rgba(0,0,0,0.3)";
 
-        return new maplibregl.Marker({ element: markerElement })
+        const marker = new maplibregl.Marker({ element: markerElement })
           .setLngLat([lng, lat])
-          .setPopup(
-            new maplibregl.Popup({ offset: 25 }).setHTML(`
-              <div class="text-sm">
-                <strong>${
-                  event.locationName || event.REGIONNAME || "Unknown"
-                }</strong><br/>
-                ${event.year ? `Year: ${event.year}<br/>` : ""}
-                ${
-                  event.magnitude || event.MAGNITUDE
-                    ? `Magnitude: ${event.magnitude ?? event.MAGNITUDE}<br/>`
-                    : ""
-                }
-                ${
-                  event.runupHeight
-                    ? `Runup Height: ${event.runupHeight}m<br/>`
-                    : ""
-                }
-                ${
-                  event.ORIGINTIME
-                    ? `Origin Time: ${event.ORIGINTIME}<br/>`
-                    : ""
-                }
-                ${event.DEPTH ? `Depth: ${event.DEPTH} km<br/>` : ""}
-              </div>
-            `)
-          )
+          // .setPopup(
+          //   new maplibregl.Popup({ offset: 25 }).setHTML(`
+          //     <div class="text-sm">
+          //       <strong>${
+          //         event.locationName || event.REGIONNAME || "Unknown"
+          //       }</strong><br/>
+          //       ${event.year ? `Year: ${event.year}<br/>` : ""}
+          //       ${
+          //         event.magnitude || event.MAGNITUDE
+          //           ? `Magnitude: ${event.magnitude ?? event.MAGNITUDE}<br/>`
+          //           : ""
+          //       }
+          //       ${
+          //         event.runupHeight
+          //           ? `Runup Height: ${event.runupHeight}m<br/>`
+          //           : ""
+          //       }
+          //       ${
+          //         event.ORIGINTIME
+          //           ? `Origin Time: ${event.ORIGINTIME}<br/>`
+          //           : ""
+          //       }
+          //       ${event.DEPTH ? `Depth: ${event.DEPTH} km<br/>` : ""}
+          //     </div>
+          //   `)
+          // )
           .addTo(map);
+
+        marker.getElement().addEventListener("click", () => {
+          setSelectedEvent(event);
+          setIsDialogOpen(true);
+        });
+
+        return marker;
       });
 
     markersRef.current[datasetKey] = markers;
@@ -344,192 +407,243 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
 
   // ------------------------- RENDER -------------------------
   return (
-    <div className="w-full h-[700px] relative">
-      {mapType == "researchMap" && (
-        <Card className="absolute top-4 left-4 z-10 bg-card/95 backdrop-blur-md border-border shadow-enterprise p-2">
-          <Button
-            className={cn(
-              "bg-transparent text-primary shadow-none w-8 hover:bg-muted ml-auto z-10",
-              !isMinimize && "rounded-full"
-            )}
-            onClick={() => setIsMinimize((prev) => !prev)}>
-            {!isMinimize ? <XIcon /> : <ChevronRight />}
-          </Button>
-          {!isMinimize && (
-            <div className="p-4 space-y-2 min-w-[200px] -mt-9">
-              {/* Map Style & 3D Toggle */}
-              <div className="flex items-center gap-3">
-                <Select value={mapStyle} onValueChange={setMapStyle}>
-                  <SelectTrigger className="w-32 border-border focus:ring-ring">
-                    <SelectValue placeholder="Select style" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(styles).map(([name, url]) => (
-                      <SelectItem key={name} value={url}>
-                        {name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+    <>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedEvent?.locationName ||
+                selectedEvent?.REGIONNAME ||
+                selectedEvent?.location ||
+                selectedEvent?.name ||
+                "Event Details"}
+            </DialogTitle>
+            <DialogDescription>
+              Complete information about this tsunami event.
+            </DialogDescription>
+          </DialogHeader>
 
-                <Button
-                  onClick={() => setIs3D((prev) => !prev)}
-                  variant={is3D ? "default" : "outline"}
-                  size="sm"
-                  className="transition-all duration-200 shadow-enterprise hover:shadow-enterprise-lg">
-                  <Layers3 className="h-4 w-4 mr-2" />
-                  {is3D ? "2D View" : "3D View"}
-                </Button>
+          {selectedEvent && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {Object.entries(selectedEvent)
+                  .filter(
+                    ([_, value]) =>
+                      value !== null && value !== undefined && value !== ""
+                  )
+                  .map(([key, value]) => (
+                    <div key={key} className="p-3 bg-muted/50 rounded-lg">
+                      <div className="font-medium text-foreground mb-1">
+                        {formatPropertyName(key)}
+                      </div>
+                      <div className="text-muted-foreground break-words">
+                        {formatPropertyValue(value)}
+                      </div>
+                    </div>
+                  ))}
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Database className="h-4 w-4 text-primary" />
-                  <Label className="text-sm font-medium text-foreground">
-                    Tsunami Data {!isDataLoaded && "(Loading...)"}
-                  </Label>
+              {Object.keys(selectedEvent).length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  No additional details available for this event.
                 </div>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start border-border focus:ring-ring bg-transparent"
-                      disabled={!isDataLoaded}>
-                      {selectedDatasets.length === 0 ? (
-                        "Select datasets..."
-                      ) : (
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {selectedDatasets.slice(0, 2).map((key) => (
-                            <Badge
-                              key={key}
-                              variant="secondary"
-                              className="text-xs">
-                              {researchDatasets[
-                                key as keyof typeof researchDatasets
-                              ]?.name ??
-                                reportDatasets[
-                                  key as keyof typeof reportDatasets
-                                ]?.name}
-                            </Badge>
-                          ))}
-                          {selectedDatasets.length > 2 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{selectedDatasets.length - 2} more
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0" align="start">
-                    <div className="p-3 border-b border-border">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">Select Datasets</h4>
-                        {selectedDatasets.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={clearAllDatasets}
-                            className="h-auto p-1 text-xs">
-                            Clear All
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    <div className="p-2">
-                      {Object.entries({
-                        ...researchDatasets,
-                        ...reportDatasets,
-                      }).map(([key, dataset]) => (
-                        <div
-                          key={key}
-                          className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
-                          onClick={() => {
-                            console.log("key: ", key);
-                            toggleDataset(key);
-                          }}>
-                          <div className="flex items-center space-x-2 flex-1">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: dataset.color }}
-                            />
-                            <span className="text-sm">{dataset.name}</span>
-                          </div>
-                          {selectedDatasets.includes(key) && (
-                            <Check className="h-4 w-4 text-primary" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                {selectedDatasets.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {selectedDatasets.map((key) => (
-                      <Badge
-                        onClick={() => toggleDataset(key)}
-                        key={key}
-                        variant="secondary"
-                        className="text-xs flex items-center gap-1 cursor-pointer hover:bg-muted">
-                        <div
-                          className="w-2 h-2 rounded-full"
-                          style={{
-                            backgroundColor:
-                              researchDatasets[
-                                key as keyof typeof researchDatasets
-                              ]?.color ??
-                              reportDatasets[key as keyof typeof reportDatasets]
-                                ?.color,
-                          }}
-                        />
-                        {researchDatasets[key as keyof typeof researchDatasets]
-                          ?.name ??
-                          reportDatasets[key as keyof typeof reportDatasets]
-                            ?.name}
-                        <X className="h-3 w-3 cursor-pointer hover:text-destructive" />
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {/* Year Range only for Research datasets */}
-                {selectedDatasets.some((d) => d in researchDatasets) && (
-                  <div className="space-y-3 pt-3 border-t border-border">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <Label className="text-sm font-medium text-foreground">
-                        Year Range: {yearRange[0]} - {yearRange[1]}
-                      </Label>
-                    </div>
-
-                    <div className="px-2">
-                      <Slider
-                        value={yearRange}
-                        onValueChange={setYearRange}
-                        min={1900}
-                        max={currentYear}
-                        step={1}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                        <span>1900</span>
-                        <span>{currentYear}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           )}
-        </Card>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      <div
-        ref={mapContainer}
-        className="w-full h-full rounded-xl border border-border shadow-enterprise overflow-hidden"
-      />
-    </div>
+      <div className="w-full h-[700px] relative">
+        {mapType == "researchMap" && (
+          <Card className="absolute top-4 left-4 z-10 bg-card/95 backdrop-blur-md border-border shadow-enterprise p-2">
+            <Button
+              className={cn(
+                "bg-transparent text-primary shadow-none w-8 hover:bg-muted ml-auto z-10",
+                !isMinimize && "rounded-full"
+              )}
+              onClick={() => setIsMinimize((prev) => !prev)}>
+              {!isMinimize ? <XIcon /> : <ChevronRight />}
+            </Button>
+            {!isMinimize && (
+              <div className="p-4 space-y-2 min-w-[200px] -mt-9">
+                {/* Map Style & 3D Toggle */}
+                <div className="flex items-center gap-3">
+                  <Select value={mapStyle} onValueChange={setMapStyle}>
+                    <SelectTrigger className="w-32 border-border focus:ring-ring">
+                      <SelectValue placeholder="Select style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(styles).map(([name, url]) => (
+                        <SelectItem key={name} value={url}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    onClick={() => setIs3D((prev) => !prev)}
+                    variant={is3D ? "default" : "outline"}
+                    size="sm"
+                    className="transition-all duration-200 shadow-enterprise hover:shadow-enterprise-lg">
+                    <Layers3 className="h-4 w-4 mr-2" />
+                    {is3D ? "2D View" : "3D View"}
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-4 w-4 text-primary" />
+                    <Label className="text-sm font-medium text-foreground">
+                      Tsunami Data {!isDataLoaded && "(Loading...)"}
+                    </Label>
+                  </div>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start border-border focus:ring-ring bg-transparent"
+                        disabled={!isDataLoaded}>
+                        {selectedDatasets.length === 0 ? (
+                          "Select datasets..."
+                        ) : (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {selectedDatasets.slice(0, 2).map((key) => (
+                              <Badge
+                                key={key}
+                                variant="secondary"
+                                className="text-xs">
+                                {researchDatasets[
+                                  key as keyof typeof researchDatasets
+                                ]?.name ??
+                                  reportDatasets[
+                                    key as keyof typeof reportDatasets
+                                  ]?.name}
+                              </Badge>
+                            ))}
+                            {selectedDatasets.length > 2 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{selectedDatasets.length - 2} more
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-0" align="start">
+                      <div className="p-3 border-b border-border">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium">
+                            Select Datasets
+                          </h4>
+                          {selectedDatasets.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={clearAllDatasets}
+                              className="h-auto p-1 text-xs">
+                              Clear All
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-2">
+                        {Object.entries({
+                          ...researchDatasets,
+                          ...reportDatasets,
+                        }).map(([key, dataset]) => (
+                          <div
+                            key={key}
+                            className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md cursor-pointer"
+                            onClick={() => {
+                              console.log("key: ", key);
+                              toggleDataset(key);
+                            }}>
+                            <div className="flex items-center space-x-2 flex-1">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: dataset.color }}
+                              />
+                              <span className="text-sm">{dataset.name}</span>
+                            </div>
+                            {selectedDatasets.includes(key) && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+
+                  {selectedDatasets.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {selectedDatasets.map((key) => (
+                        <Badge
+                          onClick={() => toggleDataset(key)}
+                          key={key}
+                          variant="secondary"
+                          className="text-xs flex items-center gap-1 cursor-pointer hover:bg-muted">
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{
+                              backgroundColor:
+                                researchDatasets[
+                                  key as keyof typeof researchDatasets
+                                ]?.color ??
+                                reportDatasets[
+                                  key as keyof typeof reportDatasets
+                                ]?.color,
+                            }}
+                          />
+                          {researchDatasets[
+                            key as keyof typeof researchDatasets
+                          ]?.name ??
+                            reportDatasets[key as keyof typeof reportDatasets]
+                              ?.name}
+                          <X className="h-3 w-3 cursor-pointer hover:text-destructive" />
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Year Range only for Research datasets */}
+                  {selectedDatasets.some((d) => d in researchDatasets) && (
+                    <div className="space-y-3 pt-3 border-t border-border">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        <Label className="text-sm font-medium text-foreground">
+                          Year Range: {yearRange[0]} - {yearRange[1]}
+                        </Label>
+                      </div>
+
+                      <div className="px-2">
+                        <Slider
+                          value={yearRange}
+                          onValueChange={setYearRange}
+                          min={1900}
+                          max={currentYear}
+                          step={1}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                          <span>1900</span>
+                          <span>{currentYear}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
+
+        <div
+          ref={mapContainer}
+          className="w-full h-full rounded-xl border border-border shadow-enterprise overflow-hidden"
+        />
+      </div>
+    </>
   );
 }

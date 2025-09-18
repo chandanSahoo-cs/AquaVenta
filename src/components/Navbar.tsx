@@ -201,10 +201,14 @@ export function Navbar() {
                           </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="cursor-pointer">
-                          <User className="mr-2 h-4 w-4" />
-                          <span>Profile</span>
-                        </DropdownMenuItem>
+                        {/* <Button asChild> */}
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => router.push("/user/profile")}>
+                            <User className="mr-2 h-4 w-4" />
+                            <span>Profile</span>
+                          </DropdownMenuItem>
+                        {/* </Button> */}
                         <DropdownMenuItem className="cursor-pointer">
                           <Settings className="mr-2 h-4 w-4" />
                           <span>Settings</span>
@@ -290,7 +294,10 @@ export function Navbar() {
                         </p>
                       </div>
                       <Button
-                        onClick={() => router.push("/user/profile")}
+                        onClick={() => {
+                          console.log("from profile");
+                          router.push("/user/profile");
+                        }}
                         variant="ghost"
                         className="w-full justify-start gap-3 px-4 py-3 text-sm font-medium">
                         <User className="h-4 w-4" />
