@@ -1,5 +1,6 @@
 "use client";
 
+import { getUserProfile } from "@/actions/profile";
 import { logoutUser } from "@/actions/user.actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -28,12 +29,21 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { RoleName } from "../../generated/prisma";
 
+interface UserProfile {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  photo: string | null;
+}
+
 export function Navbar() {
   const [userRole, setUserRole] = useState<RoleName | string>("");
   const [userName, setUserName] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userData, setUserData] = useState<UserProfile | null>(null);
   const pathname = usePathname();
 
   const hideNavbar = pathname === "/auth";
@@ -83,6 +93,21 @@ export function Navbar() {
 
     fetchPayload();
   }, []);
+
+  useEffect(() => {
+    try {
+      const fetchData = async () => {
+        const res = await getUserProfile();
+        if (!res || !res.success) {
+          throw new Error("Failed to get user data");
+        }
+        setUserData(res.data as UserProfile);
+      };
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to get user data");
+    }
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -174,7 +199,7 @@ export function Navbar() {
                           className="relative h-10 w-10 rounded-full hover:bg-muted">
                           <Avatar className="h-9 w-9">
                             <AvatarImage
-                              src="/placeholder.svg"
+                              src={userData?.photo || "/placeholder.svg"}
                               alt={userName}
                             />
                             <AvatarFallback className="bg-primary text-primary-foreground">
@@ -202,12 +227,12 @@ export function Navbar() {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {/* <Button asChild> */}
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => router.push("/user/profile")}>
-                            <User className="mr-2 h-4 w-4" />
-                            <span>Profile</span>
-                          </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => router.push("/user/profile")}>
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Profile</span>
+                        </DropdownMenuItem>
                         {/* </Button> */}
                         <DropdownMenuItem className="cursor-pointer">
                           <Settings className="mr-2 h-4 w-4" />
