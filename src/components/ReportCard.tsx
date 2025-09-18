@@ -6,6 +6,7 @@ import type { Report } from "../../generated/prisma";
 import Image from "next/image";
 import Link from "next/link";
 import { updateReportStatus } from "@/actions/analyst"; // Re-import the action
+import { Button } from "./ui/button";
 
 type ReportWithUser = Report & {
   user: { name: string | null; email:string | null } | null;
@@ -100,20 +101,20 @@ export function ReportCard({ report }: { report: ReportWithUser }) {
         {error && <p className="text-center text-sm text-red-500">{error}</p>}
 
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={(e) => handleUpdate(e, "verified")}
             disabled={isSubmitting}
-            className="w-full rounded-md bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-muted"
+            className="w-30 rounded-md px-4 py-2 font-semibold bg-white text-[#193b57] border-3 border-[#193b57] hover:bg-muted  disabled:cursor-not-allowed disabled:bg-muted"
           >
-            {isSubmitting ? "..." : "Approve"}
-          </button>
-          <button
+            {isSubmitting ? "..." : "Approve"}           
+          </Button>
+          <Button
             onClick={(e) => handleUpdate(e, "rejected")}
             disabled={isSubmitting}
-            className="w-full rounded-md bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-muted"
+            className="w-30 rounded-md px-4 py-2 font-semibold disabled:cursor-not-allowed disabled:bg-muted"
           >
             {isSubmitting ? "..." : "Reject"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
