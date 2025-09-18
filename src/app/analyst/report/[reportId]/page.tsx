@@ -1,6 +1,7 @@
 // src/app/analyst/report/[reportId]/page.tsx
 import { getReportById } from "@/actions/analyst";
 import { ReportActions } from "@/components/ReportActions";
+import { LocationDisplay } from "@/components/LocationDisplay";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -47,7 +48,11 @@ export default async function ReportDetailPage({ params }: { params: { reportId:
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground">Location</h3>
-                <p className="text-base">{report.location || "N/A"}</p>
+                <LocationDisplay
+                  latitude={report.latitude}
+                  longitude={report.longitude}
+                  className="text-base"
+                />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground">Submitted By</h3>

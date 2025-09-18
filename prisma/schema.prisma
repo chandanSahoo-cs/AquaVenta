@@ -32,7 +32,6 @@ model User {
   lastLogin    DateTime?
 
   photo        String?   // URL to user profile photo
-  location     String?   // User location
 
   reports       Report[]
   validations   ReportValidation[]
@@ -61,7 +60,8 @@ model Report {
   severity    Int      @default(0)
   language    String?
   trustScore  Float?
-  location    String?
+  latitude    Float?
+  longitude   Float?
 
   media       String
   validations ReportValidation[]

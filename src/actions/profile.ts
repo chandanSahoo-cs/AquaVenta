@@ -18,7 +18,6 @@ export const getUserProfile = async () => {
         email: true,
         phone: true,
         photo: true,
-        location: true,
       },
     })
 
@@ -35,7 +34,7 @@ export const getUserProfile = async () => {
 
 export const updateUserProfile = async (
   userId: string,
-  updates: { name?: string; email?: string; phone?: string; location?: string; photo?: string },
+  updates: { name?: string; email?: string; phone?: string; photo?: string },
 ) => {
   try {
     const userPayload = await giveUserPayload()
@@ -72,7 +71,6 @@ export const updateUserProfile = async (
         email: true,
         phone: true,
         photo: true,
-        location: true,
       },
     })
 
