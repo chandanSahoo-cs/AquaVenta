@@ -18,6 +18,9 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("Detecting location...");
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(
+    null,
+  );
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -26,10 +29,24 @@ export default function UploadPage() {
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
-          // In a real app, you might use a reverse geocoding service here
-          setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          setCoords({ lat: latitude, lon: longitude }); // Store the coordinates
+
+          // Fetch readable address for display purposes only
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+            );
+            const data = await response.json();
+            if (data && data.display_name) {
+              setLocation(data.display_name);
+            } else {
+              setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+            }
+          } catch (error) {
+            setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          }
         },
         () => {
           setLocation("Enable location services or enter manually.");
@@ -70,8 +87,11 @@ export default function UploadPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!file) return
+    e.preventDefault();
+    if (!file || !coords) {
+      setMessage("File and location are required.");
+      return;
+    }
 
     setUploading(true)
     setMessage("")
@@ -82,10 +102,12 @@ export default function UploadPage() {
       const snapshot = await uploadBytes(storageRef, file)
       const downloadURL = await getDownloadURL(snapshot.ref)
 
-      const formData = new FormData()
-      formData.append("description", description)
-      formData.append("location", location)
-      formData.append("fileUrl", downloadURL)
+      const formData = new FormData();
+      formData.append("description", description);
+      formData.append("fileUrl", downloadURL);
+      // Send coordinates instead of the location string
+      formData.append("latitude", String(coords.lat));
+      formData.append("longitude", String(coords.lon));
 
       const result = await uploadMedia(formData)
 

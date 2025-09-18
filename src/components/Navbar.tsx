@@ -290,6 +290,7 @@ export function Navbar() {
                         </p>
                       </div>
                       <Button
+                        onClick={() => router.push("/user/profile")}
                         variant="ghost"
                         className="w-full justify-start gap-3 px-4 py-3 text-sm font-medium">
                         <User className="h-4 w-4" />

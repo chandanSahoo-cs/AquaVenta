@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader} from "@/components/ui/card"
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Download, ExternalLink, Play } from "lucide-react"
+import { LocationDisplay } from "@/components/LocationDisplay";
+
 
 interface MediaItem {
   id: string
@@ -16,7 +18,8 @@ interface MediaItem {
   submittedAt: string | Date
   category?: string | null
   description?: string | null
-  location?: string | null
+  latitude?: number | null
+  longitude?: number | null
   user: {
     name: string | null
   } | null
@@ -135,6 +138,11 @@ export default function GalleryPage() {
                               <p className="text-sm text-muted-foreground">
                                 Uploaded by {item.user?.name || "Anonymous"}
                               </p>
+                              <LocationDisplay
+                                latitude={item.latitude}
+                                longitude={item.longitude}
+                                className="text-sm text-muted-foreground mt-1"
+                              />
                             </div>
                             <div className="flex gap-2">
                               <Button

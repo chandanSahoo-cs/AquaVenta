@@ -1,4 +1,3 @@
-// src/actions/analyst.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -55,6 +54,17 @@ export async function getReportById(reportId: string) {
         user: {
           select: { name: true, email: true },
         },
+        // Also include the validation history for this report
+        validations: {
+          include: {
+            validator: {
+              select: { name: true },
+            },
+          },
+          orderBy: {
+            validatedAt: "desc",
+          },
+        },
       },
     });
 
@@ -66,6 +76,39 @@ export async function getReportById(reportId: string) {
   } catch (error) {
     console.error("Failed to fetch report by ID:", error);
     return { error: "Database error." };
+  }
+}
+
+/**
+ * Fetches all validated (verified or rejected) reports.
+ * Only accessible by users with the 'analyst' or 'admin' role.
+ */
+export async function getValidatedReports() {
+  const user = await getCurrentUser();
+  if (user?.role !== "analyst" && user?.role !== "admin") {
+    return { error: "Unauthorized: You do not have permission to view this content." };
+  }
+
+  try {
+    const reports = await prisma.report.findMany({
+      where: {
+        status: {
+          in: ["verified", "rejected"],
+        },
+      },
+      include: {
+        user: {
+          select: { name: true },
+        },
+      },
+      orderBy: {
+        submittedAt: "desc",
+      },
+    });
+    return { reports };
+  } catch (error) {
+    console.error("Failed to fetch validated reports:", error);
+    return { error: "Database error: Could not fetch validation history." };
   }
 }
 
@@ -110,7 +153,9 @@ export async function updateReportStatus(args: UpdateReportArgs) {
       return report;
     });
 
-    revalidatePath("/analyst");
+    // Revalidate paths to ensure fresh data is shown on navigation
+    revalidatePath("/analyst/validate");
+    revalidatePath("/analyst/history");
     revalidatePath(`/analyst/report/${reportId}`);
 
     return { success: true, updatedReport };
@@ -119,3 +164,4 @@ export async function updateReportStatus(args: UpdateReportArgs) {
     return { error: "Database error: Could not update the report." };
   }
 }
+
