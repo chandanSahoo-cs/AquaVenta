@@ -185,22 +185,22 @@ export function ReportCard({ report }: { report: ReportWithUser }) {
             </div>
           )}
 
-          <div className="flex gap-2">
-            <Button
-              onClick={(e) => handleUpdate(e, "verified")}
-              disabled={isSubmitting}
-              className="w-30 rounded-md px-4 py-2 font-semibold bg-white text-[#193b57] border-2 border-[#193b57] hover:bg-muted disabled:cursor-not-allowed disabled:bg-muted"
-            >
-              {isSubmitting ? "..." : "Approve"}           
-            </Button>
-            <Button
-              onClick={(e) => handleUpdate(e, "rejected")}
-              disabled={isSubmitting}
-              className="w-30 rounded-md px-4 py-2 font-semibold disabled:cursor-not-allowed disabled:bg-muted"
-            >
-              {isSubmitting ? "..." : "Reject"}
-            </Button>
-          </div>
+          <div className="flex gap-3 justify-between items-stretch">
+  <Button
+    onClick={(e) => handleUpdate(e, "verified")}
+    disabled={isSubmitting}
+    className="flex-1 rounded-md px-4 py-2.5 font-semibold bg-white text-[#193b57] border-2 border-[#193b57] hover:bg-blue-50 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+  >
+    {isSubmitting ? "..." : "Approve"}           
+  </Button>
+  <Button
+    onClick={(e) => handleUpdate(e, "rejected")}
+    disabled={isSubmitting}
+    className="flex-1 rounded-md px-4 py-2.5 font-semibold bg-gray-800 text-white hover:bg-gray-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+  >
+    {isSubmitting ? "..." : "Reject"}
+  </Button>
+</div>
           
           <Button asChild variant="ghost" className="w-full gap-1 text-xs" size="sm">
             <Link href={`/analyst/report/${report.id}`}>
