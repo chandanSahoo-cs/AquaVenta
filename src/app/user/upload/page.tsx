@@ -25,7 +25,7 @@ export default function UploadPage() {
   const [message, setMessage] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // Auto-detect location on component mount
+  // This effect runs only once on mount for auto-detection
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -56,6 +56,42 @@ export default function UploadPage() {
       setLocation("Location detection not supported.");
     }
   }, []);
+
+  // This effect runs when the user manually types a location
+  useEffect(() => {
+    // A simple debounce to prevent API calls on every keystroke
+    const handler = setTimeout(async () => {
+      // Only geocode if the location is not one of the initial messages
+      if (
+        location &&
+        !location.startsWith("Detecting") &&
+        !location.startsWith("Enable")
+      ) {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+              location,
+            )}&format=json&limit=1`,
+          );
+          const data = await response.json();
+          if (data && data.length > 0) {
+            // Update coordinates from the geocoding result
+            setCoords({ lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) });
+          } else {
+            // If no result, clear coords to prevent submitting a wrong location
+            setCoords(null);
+          }
+        } catch (error) {
+          console.error("Forward geocoding failed:", error);
+          setCoords(null);
+        }
+      }
+    }, 1000); // Wait 1 second after user stops typing
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [location]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -88,7 +124,7 @@ export default function UploadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !coords) {
+    if (!file) {
       setMessage("File and location are required.");
       return;
     }
@@ -106,8 +142,10 @@ export default function UploadPage() {
       formData.append("description", description);
       formData.append("fileUrl", downloadURL);
       // Send coordinates instead of the location string
-      formData.append("latitude", String(coords.lat));
-      formData.append("longitude", String(coords.lon));
+      if (coords) {
+        formData.append("latitude", String(coords.lat));
+        formData.append("longitude", String(coords.lon));
+      }
 
       const result = await uploadMedia(formData)
 

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, Play, Trash2 } from "lucide-react";
+import { Download, ExternalLink, Play, Trash2, CheckCircle, Clock } from "lucide-react";
 import { LocationDisplay } from "@/components/LocationDisplay";
 
 // Define the Submission type based on what getUserMedia returns
@@ -31,6 +31,26 @@ interface Submission {
 export default function UserSubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [view, setView] = useState<"verified" | "other">("verified");
+
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Network response was not ok.");
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl); // Clean up
+    } catch (error) {
+      console.error("Download failed:", error);
+      window.open(url, "_blank");
+    }
+  };
 
   useEffect(() => {
     const loadSubmissions = async () => {
@@ -185,12 +205,7 @@ export default function UserSubmissionsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            const link = document.createElement("a");
-                            link.href = submission.media;
-                            link.download = `submission-${submission.id}`;
-                            link.click();
-                          }}
+                          onClick={() => handleDownload(submission.media, `submission-${submission.id}`)}
                         >
                           <Download className="w-4 h-4 mr-1" />
                           Download
@@ -240,20 +255,33 @@ export default function UserSubmissionsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">My Submissions</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <Card>
-          <CardHeader>
-            <CardTitle>Verified Submissions</CardTitle>
-          </CardHeader>
-          <CardContent>{renderSubmissionGrid(verifiedSubmissions)}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending & Other Submissions</CardTitle>
-          </CardHeader>
-          <CardContent>{renderSubmissionGrid(otherSubmissions)}</CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              onClick={() => setView("verified")}
+              variant={view === "verified" ? "default" : "outline"}
+              className="w-full sm:w-auto"
+            >
+              <CheckCircle className="w-5 h-5 mr-2" />
+              Verified Submissions
+            </Button>
+            <Button
+              onClick={() => setView("other")}
+              variant={view === "other" ? "default" : "outline"}
+              className="w-full sm:w-auto"
+            >
+              <Clock className="w-5 h-5 mr-2" />
+              Pending & Other
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {view === "verified"
+            ? renderSubmissionGrid(verifiedSubmissions)
+            : renderSubmissionGrid(otherSubmissions)}
+        </CardContent>
+      </Card>
     </div>
   );
 }
