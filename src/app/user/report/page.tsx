@@ -1,32 +1,36 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { getAllVerifiedMedia } from "@/actions/media"
-import Image from "next/image"
-import { Card, CardContent, CardHeader} from "@/components/ui/card"
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Download, ExternalLink, Play } from "lucide-react"
+import { getAllVerifiedMedia } from "@/actions/media";
 import { LocationDisplay } from "@/components/LocationDisplay";
-
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Download, ExternalLink, Play } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 interface MediaItem {
-  id: string
-  media: string
-  status: string
-  severity: number
-  submittedAt: string | Date
-  category?: string | null
-  description?: string | null
-  latitude?: number | null
-  longitude?: number | null
+  id: string;
+  media: string;
+  status: string;
+  severity: number;
+  submittedAt: string | Date;
+  category?: string | null;
+  description?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   user: {
-    name: string | null
-  } | null
+    name: string | null;
+  } | null;
 }
 
 export default function GalleryPage() {
-  const [media, setMedia] = useState<MediaItem[]>([])
+  const [media, setMedia] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const handleDownload = async (url: string, filename: string) => {
@@ -51,29 +55,29 @@ export default function GalleryPage() {
 
   useEffect(() => {
     const loadMedia = async () => {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
-        const result = await getAllVerifiedMedia()
-        setMedia(result as MediaItem[])
+        const result = await getAllVerifiedMedia();
+        setMedia(result as MediaItem[]);
       } catch (error) {
-        console.error("Failed to load gallery media:", error)
+        console.error("Failed to load gallery media:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
-    loadMedia()
-  }, [])
+    };
+    loadMedia();
+  }, []);
 
   const isVideo = (url: string) => {
-    const cleanUrl = url ? url.split("?")[0] : ""
-    return cleanUrl && /\.(mp4|webm|mov|ogg|avi)$/i.test(cleanUrl)
-  }
+    const cleanUrl = url ? url.split("?")[0] : "";
+    return cleanUrl && /\.(mp4|webm|mov|ogg|avi)$/i.test(cleanUrl);
+  };
 
   return (
     <div className="container mx-auto px-4 py-12">
       <Card className="shadow-lg max-w-7xl mx-auto">
         <CardHeader className="text-center">
-          <h1 className="text-4xl font-bold mb-2">Media Gallery</h1>
+          <h1 className="text-4xl font-bold mb-2">Disaster Alerts</h1>
           <p className="text-muted-foreground">
             Browse community-shared and verified disaster photos and videos.
           </p>
@@ -82,7 +86,10 @@ export default function GalleryPage() {
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-gray-200 rounded-lg aspect-video animate-pulse" />
+                <div
+                  key={i}
+                  className="bg-gray-200 rounded-lg aspect-video animate-pulse"
+                />
               ))}
             </div>
           ) : media.length === 0 ? (
@@ -92,7 +99,7 @@ export default function GalleryPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {media.map((item) => {
-                const isVideoResult = isVideo(item.media)
+                const isVideoResult = isVideo(item.media);
                 return (
                   <Dialog key={item.id}>
                     <Card className="overflow-hidden">
@@ -125,7 +132,9 @@ export default function GalleryPage() {
                         </div>
                       </DialogTrigger>
                       <div className="p-4">
-                        <p className="font-semibold truncate">{item.description || "Untitled"}</p>
+                        <p className="font-semibold truncate">
+                          {item.description || "Untitled"}
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           By {item.user?.name || "Anonymous"} on{" "}
                           {new Date(item.submittedAt).toLocaleDateString()}
@@ -133,7 +142,9 @@ export default function GalleryPage() {
                       </div>
                     </Card>
                     <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-                      <DialogTitle className="sr-only">Media Preview</DialogTitle>
+                      <DialogTitle className="sr-only">
+                        Media Preview
+                      </DialogTitle>
                       <div className="relative">
                         {isVideoResult ? (
                           <video
@@ -154,7 +165,9 @@ export default function GalleryPage() {
                         <div className="p-4 border-t">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-bold">{item.description || "Untitled"}</p>
+                              <p className="font-bold">
+                                {item.description || "Untitled"}
+                              </p>
                               <p className="text-sm text-muted-foreground">
                                 Uploaded by {item.user?.name || "Anonymous"}
                               </p>
@@ -168,13 +181,17 @@ export default function GalleryPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDownload(item.media, `media-${item.id}`)}
-                              >
+                                onClick={() =>
+                                  handleDownload(item.media, `media-${item.id}`)
+                                }>
                                 <Download className="w-4 h-4 mr-1" />
                                 Download
                               </Button>
                               <Button variant="outline" size="sm" asChild>
-                                <a href={item.media} target="_blank" rel="noopener noreferrer">
+                                <a
+                                  href={item.media}
+                                  target="_blank"
+                                  rel="noopener noreferrer">
                                   <ExternalLink className="w-4 h-4 mr-1" />
                                   Open
                                 </a>
@@ -185,12 +202,12 @@ export default function GalleryPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                )
+                );
               })}
             </div>
           )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

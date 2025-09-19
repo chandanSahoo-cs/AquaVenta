@@ -1,22 +1,22 @@
-"use server"
+"use server";
 
-import { prisma } from "@/lib/prisma"
-import { revalidatePath } from "next/cache"
-import { giveUserPayload } from "./user.actions"
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { giveUserPayload } from "./user.actions";
 
 export async function uploadMedia(formData: FormData) {
   try {
-    const description = formData.get("description") as string
-    const fileUrl = formData.get("fileUrl") as string
-    const latitude = formData.get("latitude")
-    const longitude = formData.get("longitude")
+    const description = formData.get("description") as string;
+    const fileUrl = formData.get("fileUrl") as string;
+    const latitude = formData.get("latitude");
+    const longitude = formData.get("longitude");
 
-    const { userPresent, id } = await giveUserPayload()
+    const { userPresent, id } = await giveUserPayload();
     if (!userPresent) {
-      throw new Error("User not present")
+      throw new Error("User not present");
     }
     if (!fileUrl) {
-      throw new Error("File URL, and user ID are required")
+      throw new Error("File URL, and user ID are required");
     }
 
     const report = await prisma.report.create({
@@ -29,22 +29,21 @@ export async function uploadMedia(formData: FormData) {
         latitude: latitude ? parseFloat(latitude as string) : null,
         longitude: longitude ? parseFloat(longitude as string) : null,
       },
-    })
+    });
 
-    revalidatePath("/user/gallery")
-    return { success: true, report }
+    revalidatePath("/user/report");
+    return { success: true, report };
   } catch (error) {
-    console.error("Upload error:", error)
-    return { success: false, error: "Failed to upload media" }
+    console.error("Upload error:", error);
+    return { success: false, error: "Failed to upload media" };
   }
 }
 
 export async function getAllMedia() {
   try {
-
-    const { userPresent } = await giveUserPayload()
+    const { userPresent } = await giveUserPayload();
     if (!userPresent) {
-      throw new Error("User not present")
+      throw new Error("User not present");
     }
 
     const reports = await prisma.report.findMany({
@@ -62,12 +61,12 @@ export async function getAllMedia() {
       orderBy: {
         submittedAt: "desc",
       },
-    })
+    });
 
-    return reports
+    return reports;
   } catch (error) {
-    console.error("Fetch error:", error)
-    return []
+    console.error("Fetch error:", error);
+    return [];
   }
 }
 
@@ -87,19 +86,19 @@ export async function getAllVerifiedMedia() {
           },
         },
       },
-    })
-    return reports
+    });
+    return reports;
   } catch (error) {
-    console.error("Failed to get all media:", error)
-    return []
+    console.error("Failed to get all media:", error);
+    return [];
   }
 }
 
 export async function getUserMedia() {
   try {
-    const { userPresent, id } = await giveUserPayload()
+    const { userPresent, id } = await giveUserPayload();
     if (!userPresent) {
-      throw new Error("User not present")
+      throw new Error("User not present");
     }
 
     const reports = await prisma.report.findMany({
@@ -118,20 +117,20 @@ export async function getUserMedia() {
       orderBy: {
         submittedAt: "desc",
       },
-    })
+    });
 
-    return reports
+    return reports;
   } catch (error) {
-    console.error("Fetch user media error:", error)
-    return []
+    console.error("Fetch user media error:", error);
+    return [];
   }
 }
 
 export async function getRecentSubmissions(limit = 6) {
   try {
-    const { userPresent, id: userId } = await giveUserPayload()
+    const { userPresent, id: userId } = await giveUserPayload();
     if (!userPresent) {
-      throw new Error("User not authenticated")
+      throw new Error("User not authenticated");
     }
 
     const reports = await prisma.report.findMany({
@@ -146,21 +145,20 @@ export async function getRecentSubmissions(limit = 6) {
         submittedAt: true,
         category: true,
       },
-    })
+    });
 
-    return { success: true, data: reports }
+    return { success: true, data: reports };
   } catch (error) {
-    console.error("Failed to get recent submissions:", error)
-    return { success: false, data: { error: (error as Error).message } }
+    console.error("Failed to get recent submissions:", error);
+    return { success: false, data: { error: (error as Error).message } };
   }
 }
 
-export async function deleteReportFromDb(reportId: string){
-  try{
-
-    const { userPresent, id: userId } = await giveUserPayload()
-    if(!userPresent) {
-      throw new Error("User not present")
+export async function deleteReportFromDb(reportId: string) {
+  try {
+    const { userPresent, id: userId } = await giveUserPayload();
+    if (!userPresent) {
+      throw new Error("User not present");
     }
 
     const deleteResult = await prisma.report.deleteMany({
@@ -168,19 +166,18 @@ export async function deleteReportFromDb(reportId: string){
         id: reportId,
         userId: userId,
       },
-    })
+    });
 
-    if(deleteResult.count === 0){
-      throw new Error("Report not found or user not authorised")
+    if (deleteResult.count === 0) {
+      throw new Error("Report not found or user not authorised");
     }
 
-    revalidatePath("/user/submissions")
-    revalidatePath("/user/profile")
+    revalidatePath("/user/submissions");
+    revalidatePath("/user/profile");
 
-    return { success: true }
-  }
-  catch (error) {
-    console.error("Failed to delete report:", error)
-    return { success: false, error: (error as Error).message }
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete report:", error);
+    return { success: false, error: (error as Error).message };
   }
 }
