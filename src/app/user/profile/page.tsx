@@ -168,6 +168,24 @@ export default function ProfilePage() {
     }
   }
 
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Network response was not ok.");
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      window.open(url, "_blank");
+    }
+  }
   const handleDeletePhoto = async () => {
     if (!profile) return
 
@@ -321,12 +339,7 @@ export default function ProfilePage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
-                                    const link = document.createElement("a")
-                                    link.href = submission.media
-                                    link.download = `submission-${submission.id}`
-                                    link.click()
-                                  }}
+                                  onClick={() => handleDownload(submission.media, `submission-${submission.id}`)}
                                 >
                                   <Download className="w-4 h-4 mr-1" />
                                   Download
