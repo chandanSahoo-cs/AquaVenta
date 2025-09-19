@@ -1,12 +1,12 @@
 "use client";
 
 import { uploadMedia } from "@/actions/media";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { storage } from "@/lib/firebase";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { FileImage, Loader2, MapPin, Upload } from "lucide-react";
@@ -19,7 +19,7 @@ export default function UploadPage() {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("Detecting location...");
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(
-    null,
+    null
   );
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
@@ -36,7 +36,7 @@ export default function UploadPage() {
           // Fetch readable address for display purposes only
           try {
             const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
             );
             const data = await response.json();
             if (data && data.display_name) {
@@ -50,7 +50,7 @@ export default function UploadPage() {
         },
         () => {
           setLocation("Enable location services or enter manually.");
-        },
+        }
       );
     } else {
       setLocation("Location detection not supported.");
@@ -70,13 +70,16 @@ export default function UploadPage() {
         try {
           const response = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-              location,
-            )}&format=json&limit=1`,
+              location
+            )}&format=json&limit=1`
           );
           const data = await response.json();
           if (data && data.length > 0) {
             // Update coordinates from the geocoding result
-            setCoords({ lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) });
+            setCoords({
+              lat: parseFloat(data[0].lat),
+              lon: parseFloat(data[0].lon),
+            });
           } else {
             // If no result, clear coords to prevent submitting a wrong location
             setCoords(null);
@@ -129,14 +132,14 @@ export default function UploadPage() {
       return;
     }
 
-    setUploading(true)
-    setMessage("")
-    setUploadSuccess(false)
+    setUploading(true);
+    setMessage("");
+    setUploadSuccess(false);
 
     try {
-      const storageRef = ref(storage, `media/${Date.now()}_${file.name}`)
-      const snapshot = await uploadBytes(storageRef, file)
-      const downloadURL = await getDownloadURL(snapshot.ref)
+      const storageRef = ref(storage, `media/${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
 
       const formData = new FormData();
       formData.append("description", description);
@@ -147,21 +150,21 @@ export default function UploadPage() {
         formData.append("longitude", String(coords.lon));
       }
 
-      const result = await uploadMedia(formData)
+      const result = await uploadMedia(formData);
 
       if (result.success) {
-        setMessage("Media uploaded successfully!")
-        setUploadSuccess(true)
+        setMessage("Media uploaded successfully!");
+        setUploadSuccess(true);
       } else {
         setMessage(result?.error || "Upload failed. Please try again.");
       }
     } catch (error) {
-      console.error("Upload error:", error)
-      setMessage("Upload failed. Please try again.")
+      console.error("Upload error:", error);
+      setMessage("Upload failed. Please try again.");
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-[calc(100vh-64px)] grid lg:grid-cols-2">
@@ -250,7 +253,7 @@ export default function UploadPage() {
                 </Alert>
               </div>
               <Link
-                href="/user/gallery"
+                href="/user/report"
                 className="w-full inline-block bg-primary text-primary-foreground py-2.5 px-4 rounded-md hover:bg-primary/90 transition-colors font-semibold">
                 View Gallery
               </Link>
@@ -316,9 +319,7 @@ export default function UploadPage() {
                 </Button>
 
                 {message && !uploadSuccess && (
-                  <div className="alert alert-error text-center">
-                    {message}
-                  </div>
+                  <div className="alert alert-error text-center">{message}</div>
                 )}
               </form>
             </>

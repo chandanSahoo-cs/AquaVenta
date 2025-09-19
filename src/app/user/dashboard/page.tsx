@@ -1,18 +1,27 @@
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
+import { JwtPayload } from "jsonwebtoken";
 import {
-  Activity,
   ArrowRight,
+  BadgeAlertIcon,
   ClipboardPlusIcon,
+  HistoryIcon,
   type LucideIcon,
   MapPinnedIcon,
   MapPlusIcon,
+  SendIcon,
+  UserStarIcon,
+  WavesIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { RoleName } from "../../../../generated/prisma";
 
 interface ModuleType {
   name: string;
   url: string;
-  role: string;
+  role: RoleName;
   icon: LucideIcon;
   description: string;
   color: string;
@@ -21,6 +30,7 @@ interface ModuleType {
 
 export default function DashboardPage() {
   const modules: ModuleType[] = [
+    // Citizen
     {
       name: "Report Map",
       url: "/user/report-map",
@@ -32,6 +42,37 @@ export default function DashboardPage() {
       iconBgColor: "bg-primary/10",
     },
     {
+      name: "Upload Report",
+      url: "/user/upload",
+      role: "citizen",
+      icon: ClipboardPlusIcon,
+      description:
+        "Submit new coastal hazard observations and contribute to marine conservation efforts",
+      color: "text-gold",
+      iconBgColor: "bg-gold/10",
+    },
+    {
+      name: "Disaster Alert",
+      url: "/user/report",
+      role: "citizen",
+      icon: BadgeAlertIcon,
+      description:
+        "Alert the system about emergencies and help safeguard your community.",
+      color: "text-success",
+      iconBgColor: "bg-success/10",
+    },
+    {
+      name: "Your Submissions",
+      url: "/user/submissions",
+      role: "citizen",
+      icon: SendIcon,
+      description: "View and manage the disaster reports you have submitted.",
+      color: "text-gold",
+      iconBgColor: "bg-gold/10",
+    },
+
+    // Analyst
+    {
       name: "Research Map",
       url: "/analyst/research-map",
       role: "analyst",
@@ -42,16 +83,61 @@ export default function DashboardPage() {
       iconBgColor: "bg-success/10",
     },
     {
-      name: "Upload Report",
-      url: "/user/upload-report",
-      role: "citizen",
-      icon: ClipboardPlusIcon,
+      name: "Reports Evaluated",
+      url: "/analyst/history",
+      role: "analyst",
+      icon: HistoryIcon,
       description:
-        "Submit new coastal hazard observations and contribute to marine conservation efforts",
+        "Access a history of disaster reports you have reviewed and evaluated",
+      color: "text-primary",
+      iconBgColor: "bg-primary/10",
+    },
+    {
+      name: "Validate Reports",
+      url: "/analyst/validate",
+      role: "analyst",
+      icon: SendIcon,
+      description:
+        "Assess incoming reports, verify their accuracy, and mark them as validated.",
       color: "text-gold",
       iconBgColor: "bg-gold/10",
     },
+
+    // Admin
+    {
+      name: "Admin Dashboard",
+      url: "/admin/dashboard",
+      role: "admin",
+      icon: UserStarIcon,
+      description:
+        "Access administrative tools to manage users, monitor reports, and configure system settings.",
+      color: "text-primary",
+      iconBgColor: "bg-primary/10",
+    },
   ];
+
+  const [role, setRole] = useState("");
+  const effectiveModules: ModuleType[] = modules.filter((module) => {
+    if (
+      role !== "" &&
+      (role === module.role ||
+        role === "admin" ||
+        (module.role !== "admin" && role === "analyst"))
+    )
+      return module;
+  });
+
+  console.log(effectiveModules);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const res = await fetch("/api/me");
+      const { userPayload } = (await res.json()) as JwtPayload;
+      setRole(userPayload.role);
+    };
+
+    fetchUser();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -71,7 +157,8 @@ export default function DashboardPage() {
             <div className="hidden lg:block">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-success/20 flex items-center justify-center">
                 <div className="w-20 h-20 rounded-full bg-card flex items-center justify-center shadow-sm">
-                  <Activity className="w-10 h-10 text-primary" />
+                  {/* <Activity className="w-10 h-10 text-primary" /> */}
+                  <WavesIcon className="w-10 h-10 text-primary" />
                 </div>
               </div>
             </div>
@@ -84,7 +171,7 @@ export default function DashboardPage() {
             System Modules
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {modules.map(
+            {effectiveModules.map(
               ({
                 name,
                 url,

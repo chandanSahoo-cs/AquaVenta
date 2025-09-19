@@ -99,7 +99,7 @@ export function Navbar() {
       const fetchData = async () => {
         const res = await getUserProfile();
         if (!res || !res.success) {
-          throw new Error("Failed to get user data");
+          return;
         }
         setUserData(res.data as UserProfile);
       };
@@ -107,7 +107,7 @@ export function Navbar() {
     } catch (error) {
       toast.error("Failed to get user data");
     }
-  });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
