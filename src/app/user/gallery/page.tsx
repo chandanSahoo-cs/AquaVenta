@@ -27,7 +27,27 @@ interface MediaItem {
 
 export default function GalleryPage() {
   const [media, setMedia] = useState<MediaItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Network response was not ok.");
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl); // Clean up
+    } catch (error) {
+      console.error("Download failed:", error);
+      // Fallback for browsers that might block this, or for CORS issues
+      window.open(url, "_blank");
+    }
+  };
 
   useEffect(() => {
     const loadMedia = async () => {
@@ -148,13 +168,10 @@ export default function GalleryPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                asChild
-                                // Use asChild to make the button a link
+                                onClick={() => handleDownload(item.media, `media-${item.id}`)}
                               >
-                                <a href={item.media} download={`media-${item.id}`}>
-                                  <Download className="w-4 h-4 mr-1" />
-                                  Download
-                                </a>
+                                <Download className="w-4 h-4 mr-1" />
+                                Download
                               </Button>
                               <Button variant="outline" size="sm" asChild>
                                 <a href={item.media} target="_blank" rel="noopener noreferrer">
