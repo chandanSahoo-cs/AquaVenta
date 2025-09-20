@@ -41,27 +41,27 @@ import { point } from "@turf/helpers";
 import nearestPointOnLine from "@turf/nearest-point-on-line";
 import type { FeatureCollection, LineString } from "geojson";
 
-function isNearCoast(event: any, maxKm = 100) {
-  const coastline = coastlineData as FeatureCollection<LineString>;
+// function isNearCoast(event: any, maxKm = 100) {
+//   const coastline = coastlineData as FeatureCollection<LineString>;
 
-  const pt = point([
-    parseFloat(event.longitude ?? event.LONGITUDE),
-    parseFloat(event.latitude ?? event.LATITUDE),
-  ]);
+//   const pt = point([
+//     parseFloat(event.longitude ?? event.LONGITUDE),
+//     parseFloat(event.latitude ?? event.LATITUDE),
+//   ]);
 
-  let near = false;
+//   let near = false;
 
-  coastline.features.forEach((feature) => {
-    const nearest = nearestPointOnLine(feature, pt);
-    // @ts-expect-error
-    const dist = distance(pt, nearest, { units: "kilometers" });
-    if (dist <= maxKm) {
-      near = true;
-    }
-  });
+//   coastline.features.forEach((feature) => {
+//     const nearest = nearestPointOnLine(feature, pt);
+//     // @ts-expect-error
+//     const dist = distance(pt, nearest, { units: "kilometers" });
+//     if (dist <= maxKm) {
+//       near = true;
+//     }
+//   });
 
-  return near;
-}
+//   return near;
+// }
 // ------------------------- CONFIG -------------------------
 const styles: Record<string, string> = {
   Streets: `https://api.maptiler.com/maps/streets/style.json?key=POOqd5CTm1rNBESonueD`,
@@ -318,7 +318,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
     }
 
     const markers = filteredData
-      .filter((e) => (e.latitude || e.LATITUDE) && isNearCoast(e))
+      .filter((e) => (e.latitude || e.LATITUDE))
       .map((event) => {
         const lat = parseFloat(event.latitude ?? event.LATITUDE);
         const lng = parseFloat(event.longitude ?? event.LONGITUDE);
