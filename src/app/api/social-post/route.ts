@@ -1,11 +1,37 @@
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
-  let redditData = {},
-    xData = {};
+// --- Type Definitions for API responses ---
+interface RedditPostData {
+  title: string;
+  selftext: string;
+  thumbnail: string;
+}
+
+interface RedditPost {
+  data: RedditPostData;
+}
+
+interface RedditApiResponse {
+  data: {
+    children: RedditPost[];
+  };
+}
+
+interface Tweet {
+  text: string;
+}
+
+interface TwitterApiResponse {
+  data: Tweet[];
+}
+// -----------------------------------------
+
+export async function GET() {
+  let redditData = {};
+  let xData = {};
   try {
-    const redditRes = (await searchReddit("tsunami India")) as any;
-    redditData = redditRes.data.children.map((res: any) => {
+    const redditRes = await searchReddit("tsunami India");
+    redditData = redditRes.data.children.map((res: RedditPost) => {
       return {
         title: res.data.title,
         selfText: res.data.selftext,
@@ -17,8 +43,8 @@ export async function GET(req: Request) {
   }
 
   try {
-    const xRes = (await searchTweets("tsunami India")) as any;
-    xData = xRes.data.map((res: any) => {
+    const xRes = await searchTweets("tsunami India");
+    xData = xRes.data.map((res: Tweet) => {
       return {
         title: "",
         selfText: res.text,
@@ -38,7 +64,7 @@ export async function GET(req: Request) {
   });
 }
 
-async function searchReddit(query: string) {
+async function searchReddit(query: string): Promise<RedditApiResponse> {
   const url = new URL("https://www.reddit.com/search.json");
   url.searchParams.set("q", query);
   url.searchParams.set("sort", "new");
@@ -54,7 +80,7 @@ async function searchReddit(query: string) {
   return data;
 }
 
-export async function searchTweets(query: string) {
+export async function searchTweets(query: string): Promise<TwitterApiResponse> {
   const BEARER_TOKEN = process.env.TWITTER_BEARER_TOKEN!;
   const url = new URL("https://api.twitter.com/2/tweets/search/recent");
   url.searchParams.set("query", query);
