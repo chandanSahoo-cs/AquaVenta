@@ -72,11 +72,12 @@ function isNearCoast(event: EventData, maxKm = 100) {
   return near;
 }
 // ------------------------- CONFIG -------------------------
+const MAPTILER_ACCESS_TOKEN = process.env.MAPTILER_ACCESS_TOKEN;
 const styles: Record<string, string> = {
-  Streets: `https://api.maptiler.com/maps/streets/style.json?key=POOqd5CTm1rNBESonueD`,
-  Dark: `https://api.maptiler.com/maps/darkmatter/style.json?key=POOqd5CTm1rNBESonueD`,
-  Satellite: `https://api.maptiler.com/maps/hybrid/style.json?key=POOqd5CTm1rNBESonueD`,
-  Light: `https://api.maptiler.com/maps/positron/style.json?key=POOqd5CTm1rNBESonueD`,
+  Streets: `https://api.maptiler.com/maps/streets/style.json?key=${MAPTILER_ACCESS_TOKEN}`,
+  Dark: `https://api.maptiler.com/maps/darkmatter/style.json?key=${MAPTILER_ACCESS_TOKEN}`,
+  Satellite: `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_ACCESS_TOKEN}`,
+  Light: `https://api.maptiler.com/maps/positron/style.json?key=${MAPTILER_ACCESS_TOKEN}`,
 };
 
 // Bounds for India (SW corner, NE corner)
