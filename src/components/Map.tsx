@@ -50,24 +50,24 @@ type EventData = {
   LONGITUDE?: string;
 };
 
-function isNearCoast(event: EventData, maxKm = 100) {
-  const coastline = coastlineData as FeatureCollection<LineString>;
+// function isNearCoast(event: EventData, maxKm = 100) {
+//   const coastline = coastlineData as FeatureCollection<LineString>;
 
-  const pt = point([
-    parseFloat(event.longitude ?? event.LONGITUDE ?? "0"),
-    parseFloat(event.latitude ?? event.LATITUDE ?? "0"),
-  ]);
+//   const pt = point([
+//     parseFloat(event.longitude ?? event.LONGITUDE ?? "0"),
+//     parseFloat(event.latitude ?? event.LATITUDE ?? "0"),
+//   ]);
 
-//   let near = false;
+// //   let near = false;
 
-  coastline.features.forEach((feature) => {
-    const nearest = nearestPointOnLine(feature, pt);
-    // @ts-expect-error The 'distance' function from @turf/distance is compatible with the output of nearestPointOnLine, but the types don't perfectly align.
-    const dist = distance(pt, nearest, { units: "kilometers" });
-    if (dist <= maxKm) {
-      near = true;
-    }
-  });
+//   coastline.features.forEach((feature) => {
+//     const nearest = nearestPointOnLine(feature, pt);
+//     // @ts-expect-error The 'distance' function from @turf/distance is compatible with the output of nearestPointOnLine, but the types don't perfectly align.
+//     const dist = distance(pt, nearest, { units: "kilometers" });
+//     if (dist <= maxKm) {
+//       near = true;
+//     }
+//   });
 
 //   return near;
 // }
