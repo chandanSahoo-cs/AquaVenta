@@ -41,7 +41,7 @@ export default function INCOISLandingPage() {
                   </span>
                 </Badge>
                 <h1 className="text-5xl lg:text-6xl font-semibold text-foreground leading-tight">
-                  Protecting India's Coastline Together
+                  Protecting India&apos;s Coastline Together
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
                   Join thousands of citizens in reporting ocean hazards like
@@ -75,7 +75,7 @@ export default function INCOISLandingPage() {
                   Live Hazard Map
                 </CardTitle>
                 <CardDescription>
-                  Real-time ocean hazard reports across India's coastline
+                  Real-time ocean hazard reports across India&apos;s coastline
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -97,7 +97,7 @@ export default function INCOISLandingPage() {
               Comprehensive Ocean Hazard Platform
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Advanced technology meets community reporting to create India's
+              Advanced technology meets community reporting to create India&apos;s
               most comprehensive ocean safety network
             </p>
           </div>
@@ -216,7 +216,7 @@ export default function INCOISLandingPage() {
               How It Works
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Simple steps to contribute to India's ocean safety network
+              Simple steps to contribute to India&apos;s ocean safety network
             </p>
           </div>
 
@@ -328,7 +328,7 @@ export default function INCOISLandingPage() {
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center space-y-8">
           <h2 className="text-4xl font-semibold">
-            Join India's Ocean Safety Network
+            Join India&apos;s Ocean Safety Network
           </h2>
           <p className="text-xl opacity-90 max-w-2xl mx-auto">
             Every report matters. Help protect coastal communities by sharing
@@ -370,7 +370,7 @@ export default function INCOISLandingPage() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Protecting India's coastline through community-driven ocean
+                Protecting India&apos;s coastline through community-driven ocean
                 hazard reporting and advanced early warning systems.
               </p>
             </div>

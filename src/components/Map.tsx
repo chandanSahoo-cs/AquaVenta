@@ -41,19 +41,28 @@ import { point } from "@turf/helpers";
 import nearestPointOnLine from "@turf/nearest-point-on-line";
 import type { FeatureCollection, LineString } from "geojson";
 
-function isNearCoast(event: any, maxKm = 100) {
+// Define a type for the event data to avoid using 'any'
+type EventData = {
+  [key: string]: unknown; // Allow other properties
+  latitude?: string;
+  LATITUDE?: string;
+  longitude?: string;
+  LONGITUDE?: string;
+};
+
+function isNearCoast(event: EventData, maxKm = 100) {
   const coastline = coastlineData as FeatureCollection<LineString>;
 
   const pt = point([
-    parseFloat(event.longitude ?? event.LONGITUDE),
-    parseFloat(event.latitude ?? event.LATITUDE),
+    parseFloat(event.longitude ?? event.LONGITUDE ?? "0"),
+    parseFloat(event.latitude ?? event.LATITUDE ?? "0"),
   ]);
 
   let near = false;
 
   coastline.features.forEach((feature) => {
     const nearest = nearestPointOnLine(feature, pt);
-    // @ts-expect-error
+    // @ts-expect-error The 'distance' function from @turf/distance is compatible with the output of nearestPointOnLine, but the types don't perfectly align.
     const dist = distance(pt, nearest, { units: "kilometers" });
     if (dist <= maxKm) {
       near = true;
@@ -115,7 +124,7 @@ const formatPropertyName = (key: string): string => {
   );
 };
 
-const formatPropertyValue = (value: any): string => {
+const formatPropertyValue = (value: unknown): string => {
   if (value === null || value === undefined || value === "") return "N/A";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
@@ -125,7 +134,7 @@ const formatPropertyValue = (value: any): string => {
 async function fetchAllFromResearchDataset(baseUrl: string) {
   let page = 1;
   let totalPages = 1;
-  const all: any[] = [];
+  const all: EventData[] = [];
 
   while (page <= totalPages) {
     const res = await fetch(`${baseUrl}&page=${page}`);
@@ -171,9 +180,9 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
   const [yearRange, setYearRange] = useState([1900, currentYear]);
 
   const markersRef = useRef<Record<string, maplibregl.Marker[]>>({});
-  const cachedDataRef = useRef<Record<string, any[]>>({});
+  const cachedDataRef = useRef<Record<string, EventData[]>>({});
 
-  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // ------------------------- DATA LOADING -------------------------
@@ -308,20 +317,24 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
       cachedDataRef.current[datasetKey]
     );
 
-    let filteredData = cachedData;
+    let filteredData: EventData[] = cachedData;
 
     if (researchDatasets[datasetKey as keyof typeof researchDatasets]) {
       filteredData = cachedData.filter((event) => {
         const eventYear = event.year;
-        return eventYear >= yearRange[0] && eventYear <= yearRange[1];
+        // Add type check to safely use the 'year' property
+        if (typeof eventYear === "number") {
+          return eventYear >= yearRange[0] && eventYear <= yearRange[1];
+        }
+        return false;
       });
     }
 
     const markers = filteredData
       .filter((e) => (e.latitude || e.LATITUDE) && isNearCoast(e))
       .map((event) => {
-        const lat = parseFloat(event.latitude ?? event.LATITUDE);
-        const lng = parseFloat(event.longitude ?? event.LONGITUDE);
+        const lat = parseFloat(event.latitude ?? event.LATITUDE ?? "0");
+        const lng = parseFloat(event.longitude ?? event.LONGITUDE ?? "0");
 
         const markerElement = document.createElement("div");
         markerElement.style.backgroundColor = color;
@@ -412,11 +425,13 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedEvent?.locationName ||
-                selectedEvent?.REGIONNAME ||
-                selectedEvent?.location ||
-                selectedEvent?.name ||
-                "Event Details"}
+              {String(
+                selectedEvent?.locationName ||
+                  selectedEvent?.REGIONNAME ||
+                  selectedEvent?.location ||
+                  selectedEvent?.name ||
+                  "Event Details"
+              )}
             </DialogTitle>
             <DialogDescription>
               Complete information about this tsunami event.
