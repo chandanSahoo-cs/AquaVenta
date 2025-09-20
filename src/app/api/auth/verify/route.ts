@@ -1,7 +1,11 @@
 import { generateAccessToken } from "@/actions/user.actions";
 import { prisma } from "@/lib/prisma";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { NextResponse } from "next/server";
+
+interface RefreshTokenPayload extends JwtPayload {
+  id: string;
+}
 
 export async function POST(req: Request) {
   const { refreshToken } = await req.json();
@@ -10,7 +14,7 @@ export async function POST(req: Request) {
     const payload = jwt.verify(
       refreshToken,
       process.env.REFRESH_TOKEN_SECRET!
-    ) as any;
+    ) as RefreshTokenPayload;
 
     const dbToken = await prisma.refreshToken.findUnique({
       where: { token: refreshToken },
