@@ -84,15 +84,17 @@ export function Navbar() {
         setUserRole(data.userPayload?.role);
         setUserName(data.userPayload?.name || "User");
         setUserEmail(data.userPayload?.email || "");
+        setUserData(data.userPayload?.photo || "/placeholder.svg");
       } catch (error) {
         setUserRole("");
         setUserName("");
         setUserEmail("");
+        setUserData(null);
       }
     };
 
     fetchPayload();
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     try {
@@ -107,7 +109,7 @@ export function Navbar() {
     } catch (error) {
       toast.error("Failed to get user data");
     }
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     const handleScroll = () => {

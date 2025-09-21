@@ -320,7 +320,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
         if (typeof eventYear === "number") {
           return eventYear >= yearRange[0] && eventYear <= yearRange[1];
         }
-        return false;
+        return true;
       });
     }
 
