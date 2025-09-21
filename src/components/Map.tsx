@@ -99,7 +99,7 @@ const researchDatasets = {
 
 const reportDatasets = {
   past90days: {
-    name: "Past 90 Days (INCOIS)",
+    name: "Past 90 Days (JalPahri)",
     url: "/api/tsunami",
     color: "#F5E727", // yellow
   },

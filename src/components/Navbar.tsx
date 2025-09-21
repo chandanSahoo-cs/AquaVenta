@@ -148,7 +148,7 @@ export function Navbar() {
                 </div>
                 <div>
                   <h1 className="text-xl font-semibold text-[#002443]">
-                    INCOIS
+                    JalPahri
                   </h1>
                   <p className="text-xs text-muted-foreground">
                     Ocean Information Services

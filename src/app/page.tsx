@@ -22,7 +22,7 @@ import {
   Waves,
 } from "lucide-react";
 
-export default function INCOISLandingPage() {
+export default function JalPahriLandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -97,8 +97,8 @@ export default function INCOISLandingPage() {
               Comprehensive Ocean Hazard Platform
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Advanced technology meets community reporting to create India&apos;s
-              most comprehensive ocean safety network
+              Advanced technology meets community reporting to create
+              India&apos;s most comprehensive ocean safety network
             </p>
           </div>
 
@@ -363,7 +363,7 @@ export default function INCOISLandingPage() {
                   <Waves className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">INCOIS</h3>
+                  <h3 className="font-semibold text-foreground">JalPahri</h3>
                   <p className="text-xs text-muted-foreground">
                     Ministry of Earth Sciences
                   </p>
