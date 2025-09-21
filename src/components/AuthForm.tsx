@@ -159,7 +159,7 @@ export function OceanAuthForm() {
         {/* Centered Heading */}
         <div className="relative z-10 text-center space-y-6">
           <div className="flex justify-center items-center gap-3 mb-4">
-            <p className="text-8xl font-bold text-primary">AquaVenta</p>
+            <p className="text-8xl font-bold text-primary">JalPahri</p>
           </div>
           <p className="text-lg xl:text-xl text-muted-foreground max-w-md mx-auto">
             Stay informed about coastal hazards in your region and their impact
@@ -184,7 +184,7 @@ export function OceanAuthForm() {
             {/* Mobile Brand */}
             <div className="flex items-center justify-center gap-3 mb-8 lg:hidden">
               <div>
-                <h1 className="text-2xl font-bold text-primary">AquaVenta</h1>
+                <h1 className="text-2xl font-bold text-primary">JalPahri</h1>
               </div>
             </div>
 

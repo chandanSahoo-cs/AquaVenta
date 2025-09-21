@@ -147,7 +147,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-5xl text-[#002443] font-serif font-bold mb-4 text-balance">
-                AquaVenta Dashboard
+                JalPahri Dashboard
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl text-pretty">
                 Monitor coastal hazards and protect marine ecosystems through

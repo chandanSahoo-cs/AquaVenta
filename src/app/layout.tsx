@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AquaVenta",
+  title: "JalPahri",
   description:
     "A link between citizens,analyst and government for ocean-related emergencies.",
   icons: {
