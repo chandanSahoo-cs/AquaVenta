@@ -275,9 +275,9 @@ export default function UploadPage() {
                 </Alert>
               </div>
               <Link
-                href="/user/report"
+                href="/user/submissions"
                 className="w-full inline-block bg-primary text-primary-foreground py-2.5 px-4 rounded-md hover:bg-primary/90 transition-colors font-semibold">
-                View Gallery
+                Your Submissions
               </Link>
               <Button
                 onClick={() => window.location.reload()}
