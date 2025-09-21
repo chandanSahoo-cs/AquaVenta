@@ -6,7 +6,7 @@ export interface PendingUpload {
   description: string;
   coords?: { lat: number; lon: number };
   createdAt: number;
-  synced: boolean;
+  synced: number;
 }
 
 export class AppDB extends Dexie {

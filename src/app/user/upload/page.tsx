@@ -149,7 +149,7 @@ export default function UploadPage() {
         description,
         coords: coords || undefined,
         createdAt: Date.now(),
-        synced: false,
+        synced: 0,
       });
 
       setMessage("Saved offline. Will sync when online.");

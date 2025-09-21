@@ -3,10 +3,12 @@ import { db } from "@/lib/db";
 import { storage } from "@/lib/firebase";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 export function useSync() {
   useEffect(() => {
     async function syncUploads() {
+      console.log("Sync is running");
       const pending = await db.uploads.where("synced").equals(0).toArray();
 
       for (const item of pending) {
@@ -29,14 +31,16 @@ export function useSync() {
           const result = await uploadMedia(formData);
 
           if (result.success) {
-            await db.uploads.update(item.id, { synced: true });
-            console.log("Synced upload:", item.id);
+            await db.uploads.update(item.id, { synced: 1 });
+            toast.success("Offline synced data uploaded successfully");
           }
         } catch (err) {
           console.error("Sync failed for", item.id, err);
         }
       }
     }
+
+    if (navigator.onLine) syncUploads();
 
     window.addEventListener("online", syncUploads);
     return () => window.removeEventListener("online", syncUploads);
