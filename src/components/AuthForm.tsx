@@ -1,13 +1,13 @@
 "use client";
 
 import { loginUser, registerUser } from "@/actions/user.actions";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { toast } from "sonner";
 
 interface AuthFormData {
   name?: string;
@@ -22,8 +22,6 @@ export function OceanAuthForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [isLogin, setIsLogin] = useState(true);
 
   const [loginData, setLoginData] = useState<AuthFormData>({
@@ -45,7 +43,6 @@ export function OceanAuthForm() {
       ...prev,
       [e.target.name]: e.target.value,
     }));
-    setError("");
   };
 
   const handleSignupChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,32 +50,31 @@ export function OceanAuthForm() {
       ...prev,
       [e.target.name]: e.target.value,
     }));
-    setError("");
   };
 
   const validateSignupForm = () => {
     if (!signupData.name?.trim()) {
-      setError("Full name is required");
+      toast.error("Full name is required");
       return false;
     }
     if (!signupData.email?.trim()) {
-      setError("Email is required");
+      toast.error("Email is required");
       return false;
     }
     if (!signupData.phone?.trim()) {
-      setError("Phone number is required");
+      toast.error("Phone number is required");
       return false;
     }
     if (!signupData.password?.trim()) {
-      setError("Password is required");
+      toast.error("Password is required");
       return false;
     }
     if (signupData.password !== signupData.confirmPassword) {
-      setError("Passwords do not match");
+      toast.error("Passwords do not match");
       return false;
     }
     if (signupData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      toast.error("Password must be at least 6 characters long");
       return false;
     }
     return true;
@@ -86,15 +82,15 @@ export function OceanAuthForm() {
 
   const validateLoginForm = () => {
     if (!loginData.email?.trim()) {
-      setError("Email is required");
+      toast.error("Email is required");
       return false;
     }
     if (!loginData.phone?.trim()) {
-      setError("Phone number is required");
+      toast.error("Phone number is required");
       return false;
     }
     if (!loginData.password?.trim()) {
-      setError("Password is required");
+      toast.error("Password is required");
       return false;
     }
     return true;
@@ -102,18 +98,20 @@ export function OceanAuthForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     if (!validateLoginForm()) return;
 
     setIsPending(true);
     try {
-      await loginUser(loginData);
+      const res = await loginUser(loginData);
+      if (!res.success) {
+        throw new Error("Failed to Login");
+      }
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      setSuccess("Welcome back! Redirecting to your dashboard...");
+      toast.success("Welcome back! Redirecting to your dashboard...");
       setTimeout(() => router.push("/user/dashboard"), 1000);
     } catch (err) {
-      setError("Login failed. Please check your credentials and try again.");
+      toast.error("Login failed. Please check your credentials and try again.");
     } finally {
       setIsPending(false);
     }
@@ -121,7 +119,6 @@ export function OceanAuthForm() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     if (!validateSignupForm()) return;
 
@@ -133,14 +130,17 @@ export function OceanAuthForm() {
         phone: signupData.phone,
         password: signupData.password,
       };
-      await registerUser(data);
+      const res = await registerUser(data);
+      if (!res.success) {
+        throw new Error("Failed to register");
+      }
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      setSuccess(
+      toast.success(
         "Account created successfully! Redirecting to your dashboard..."
       );
       setTimeout(() => router.push("/user/dashboard"), 1000);
     } catch (err) {
-      setError("Registration failed. Please try again.");
+      toast.error("Registration failed. Please try again.");
     } finally {
       setIsPending(false);
     }
@@ -148,8 +148,6 @@ export function OceanAuthForm() {
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
-    setError("");
-    setSuccess("");
   };
 
   return (
@@ -268,22 +266,6 @@ export function OceanAuthForm() {
                       </button>
                     </div>
                   </div>
-
-                  {error && (
-                    <Alert className="border-destructive/30 bg-destructive/10 rounded-xl">
-                      <AlertDescription className="text-destructive font-medium text-base">
-                        {error}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {success && (
-                    <Alert className="border-success/30 bg-success/10 rounded-xl">
-                      <AlertDescription className="text-success font-medium text-base">
-                        {success}
-                      </AlertDescription>
-                    </Alert>
-                  )}
 
                   <Button
                     type="submit"
@@ -425,22 +407,6 @@ export function OceanAuthForm() {
                       </div>
                     </div>
                   </div>
-
-                  {error && (
-                    <Alert className="border-destructive/30 bg-destructive/10 rounded-xl">
-                      <AlertDescription className="text-destructive font-medium text-base">
-                        {error}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {success && (
-                    <Alert className="border-success/30 bg-success/10 rounded-xl">
-                      <AlertDescription className="text-success font-medium text-base">
-                        {success}
-                      </AlertDescription>
-                    </Alert>
-                  )}
 
                   <Button
                     type="submit"
