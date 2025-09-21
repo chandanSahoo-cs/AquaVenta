@@ -2,10 +2,12 @@ import { uploadMedia } from "@/actions/media";
 import { db } from "@/lib/db";
 import { storage } from "@/lib/firebase";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
 export function useSync() {
+  const router = useRouter();
   useEffect(() => {
     async function syncUploads() {
       console.log("Sync is running");
@@ -33,6 +35,7 @@ export function useSync() {
           if (result.success) {
             await db.uploads.update(item.id, { synced: 1 });
             toast.success("Offline synced data uploaded successfully");
+            setTimeout(() => router.push("/user/upload"), 1000);
           }
         } catch (err) {
           console.error("Sync failed for", item.id, err);
@@ -40,7 +43,9 @@ export function useSync() {
       }
     }
 
-    if (navigator.onLine) syncUploads();
+    if (navigator.onLine) {
+      syncUploads();
+    }
 
     window.addEventListener("online", syncUploads);
     return () => window.removeEventListener("online", syncUploads);
