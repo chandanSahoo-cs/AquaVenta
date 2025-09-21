@@ -105,6 +105,14 @@ const reportDatasets = {
   },
 };
 
+const userReportDatasets = {
+  "user-reports": {
+    name: "User Reports",
+    url: "/api/user-reports",
+    color: "#FF8CFF", // pink
+  },
+};
+
 // ------------------------- HELPER FUNCTIONS -------------------------
 const formatPropertyName = (key: string): string => {
   return (
@@ -155,6 +163,16 @@ async function fetchAllFromReportDataset(baseUrl: string) {
   return data.datasets ?? [];
 }
 
+async function fetchAllFromUserReportDataset(baseUrl: string) {
+  const res = await fetch(baseUrl);
+  if (!res.ok) {
+    toast.error("Failed to fetch report dataset");
+    return [];
+  }
+  const data = await res.json();
+  return data.verifiedReports ?? [];
+}
+
 interface IndiaMapProps {
   mapType: "publicMap" | "researchMap";
 }
@@ -199,10 +217,22 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
           }
         );
 
-        await Promise.all([...researchPromises, ...reportPromises]);
+        const userReportPromises = Object.entries(userReportDatasets).map(
+          async ([key, dataset]) => {
+            cachedDataRef.current[key] = await fetchAllFromUserReportDataset(
+              dataset.url
+            );
+          }
+        );
+
+        await Promise.all([
+          ...researchPromises,
+          ...reportPromises,
+          ...userReportPromises,
+        ]);
         setIsDataLoaded(true);
       } catch (error) {
-        console.error("Failed to load tsunami data:", error);
+        console.error("Failed to load Ocean Hazard  data:", error);
       }
     };
 
@@ -301,7 +331,8 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
 
     const dataset =
       researchDatasets[datasetKey as keyof typeof researchDatasets] ||
-      reportDatasets[datasetKey as keyof typeof reportDatasets];
+      reportDatasets[datasetKey as keyof typeof reportDatasets] ||
+      userReportDatasets[datasetKey as keyof typeof userReportDatasets];
 
     const color = dataset.color;
     const cachedData = cachedDataRef.current[datasetKey];
@@ -428,7 +459,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
               )}
             </DialogTitle>
             <DialogDescription>
-              Complete information about this tsunami event.
+              Complete information about this Ocean Hazard  event.
             </DialogDescription>
           </DialogHeader>
 
@@ -504,7 +535,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
                   <div className="flex items-center gap-2">
                     <Database className="h-4 w-4 text-primary" />
                     <Label className="text-sm font-medium text-foreground">
-                      Tsunami Data {!isDataLoaded && "(Loading...)"}
+                      Ocean Hazard  Data {!isDataLoaded && "(Loading...)"}
                     </Label>
                   </div>
 
@@ -528,6 +559,9 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
                                 ]?.name ??
                                   reportDatasets[
                                     key as keyof typeof reportDatasets
+                                  ]?.name ??
+                                  userReportDatasets[
+                                    key as keyof typeof userReportDatasets
                                   ]?.name}
                               </Badge>
                             ))}
@@ -561,6 +595,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
                         {Object.entries({
                           ...researchDatasets,
                           ...reportDatasets,
+                          ...userReportDatasets,
                         }).map(([key, dataset]) => (
                           <div
                             key={key}
@@ -602,6 +637,9 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
                                 ]?.color ??
                                 reportDatasets[
                                   key as keyof typeof reportDatasets
+                                ]?.color ??
+                                userReportDatasets[
+                                  key as keyof typeof userReportDatasets
                                 ]?.color,
                             }}
                           />

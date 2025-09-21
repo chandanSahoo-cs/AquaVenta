@@ -30,7 +30,12 @@ export async function middleware(req: NextRequest) {
       process.env.ACCESS_TOKEN_SECRET!
     );
     if (payload) {
-      if (req.nextUrl.pathname.startsWith("/auth")) {
+      const role = payload.role;
+      if (
+        req.nextUrl.pathname.startsWith("/auth") ||
+        (req.nextUrl.pathname.startsWith("/admin") && role !== "admin") ||
+        (req.nextUrl.pathname.startsWith("/analyst") && role === "citizen")
+      ) {
         return NextResponse.redirect(new URL("/user/dashboard", req.url));
       }
       return NextResponse.next();
@@ -67,7 +72,7 @@ export async function middleware(req: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
       });
-      
+
       return res;
     } catch {
       return redirectToAuth(req);
@@ -77,5 +82,11 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/user/:path*", "/admin/:path*", "/analyst/:path*", "/auth"],
+  matcher: [
+    "/user/:path*",
+    "/admin/:path*",
+    "/analyst/:path*",
+    "/analyst/research-map",
+    "/auth",
+  ],
 };

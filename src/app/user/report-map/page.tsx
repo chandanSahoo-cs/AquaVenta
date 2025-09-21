@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import IndiaMap from "@/components/Map";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ export default function ReportMapPage() {
     <main className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6 ">
         <h1 className="text-3xl font-bold text-[#002443]">
-          Tsunami Report Data Visualization
+          Ocean Hazard Report Data Visualization
         </h1>
         <Button
           onClick={() => router.back()}
