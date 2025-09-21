@@ -11,7 +11,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Download, ExternalLink, Play } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 
 interface MediaItem {
@@ -121,12 +120,11 @@ export default function GalleryPage() {
                               </div>
                             </>
                           ) : (
-                            <Image
+                            <img
                               src={item.media}
                               alt={item.description || "Gallery media"}
-                              fill
                               sizes="(max-width: 768px) 50vw, 33vw"
-                              className="object-cover group-hover:scale-105 transition-transform"
+                              className="object-cover group-hover:scale-105 transition-transform w-full h-full"
                             />
                           )}
                         </div>
@@ -154,7 +152,7 @@ export default function GalleryPage() {
                             className="w-full max-h-[70vh] object-contain"
                           />
                         ) : (
-                          <Image
+                          <img
                             src={item.media}
                             alt={item.description || "Gallery media"}
                             width={1200}

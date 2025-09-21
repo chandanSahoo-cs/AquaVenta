@@ -1,25 +1,25 @@
 // src/app/analyst/report/[reportId]/page.tsx
 import { getReportById } from "@/actions/analyst";
-import { ReportActions } from "@/components/ReportActions";
 import { LocationDisplay } from "@/components/LocationDisplay";
-import Image from "next/image";
+import { ReportActions } from "@/components/ReportActions";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar,
+  FileText,
+  MapPin,
+  Play,
+  Shield,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { 
-  ArrowLeft, 
-  User, 
-  Calendar, 
-  MapPin, 
-  FileText, 
-  AlertCircle,
-  Shield
-} from "lucide-react";
 
-export default async function ReportDetailPage({ 
-  params 
-}: { 
-  params: { reportId: string } 
+export default async function ReportDetailPage({
+  params,
+}: {
+  params: { reportId: string };
 }) {
   const { reportId } = params;
   const { report, error } = await getReportById(reportId);
@@ -31,13 +31,18 @@ export default async function ReportDetailPage({
   // Format date for better readability
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
+  };
+
+  const isVideo = (url: string) => {
+    const cleanUrl = url ? url.split("?")[0] : "";
+    return cleanUrl && /\.(mp4|webm|mov|ogg|avi)$/i.test(cleanUrl);
   };
 
   return (
@@ -45,10 +50,9 @@ export default async function ReportDetailPage({
       <div className="container mx-auto max-w-6xl px-4 py-8">
         {/* Header with back navigation */}
         <div className="mb-6 flex items-center gap-4">
-          <Link 
-            href="/analyst/validate" 
-            className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
-          >
+          <Link
+            href="/analyst/validate"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
             <ArrowLeft className="h-4 w-4" />
             Back to Validation Queue
           </Link>
@@ -69,17 +73,26 @@ export default async function ReportDetailPage({
               <div className="p-4">
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
                   {report.media ? (
-                    <Image 
-                      src={report.media} 
-                      alt="Report media" 
-                      fill 
-                      className="object-contain"
-                      priority
-                    />
+                    !isVideo(report.media) ? (
+                      <img
+                        src={report.media}
+                        alt="Report media"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105 w-full h-full"
+                      />
+                    ) : (
+                      <>
+                        <video
+                          src={report.media}
+                          className="w-full h-full object-cover object-center bg-black"
+                          controls
+                        />
+                      </>
+                    )
                   ) : (
-                    <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-                      <AlertCircle className="h-12 w-12" />
-                      <p className="text-sm">No Media Provided</p>
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                      <AlertCircle className="h-8 w-8" />
+                      <span className="text-sm">No media available</span>
                     </div>
                   )}
                 </div>
@@ -119,10 +132,10 @@ export default async function ReportDetailPage({
               <div className="p-6 space-y-6">
                 {/* Status */}
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Status</h3>
-                  <Badge 
-                    className="flex items-center gap-1 font-medium bg-gray-200 text-gray-800 hover:bg-gray-300 px-3 py-1"
-                  >
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    Status
+                  </h3>
+                  <Badge className="flex items-center gap-1 font-medium bg-gray-200 text-gray-800 hover:bg-gray-300 px-3 py-1">
                     {report.status}
                   </Badge>
                 </div>

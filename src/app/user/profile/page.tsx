@@ -1,221 +1,263 @@
-"use client"
+"use client";
 
-import { storage } from "@/lib/firebase"
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage"
-import type React from "react"
+import { storage } from "@/lib/firebase";
+import {
+  getDownloadURL,
+  ref as storageRef,
+  uploadBytes,
+} from "firebase/storage";
+import type React from "react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
-import { Camera, Edit2, Save, Trash2, X, ExternalLink, Download, Play } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
-import { getUserProfile, updateUserProfile, deleteUserPhoto } from "@/actions/profile"
-import { getRecentSubmissions } from "@/actions/media"
-import Image from "next/image"
+import { getRecentSubmissions } from "@/actions/media";
+import {
+  deleteUserPhoto,
+  getUserProfile,
+  updateUserProfile,
+} from "@/actions/profile";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Camera,
+  Download,
+  Edit2,
+  ExternalLink,
+  Play,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface UserProfile {
-  id: string
-  name: string | null
-  email: string | null
-  phone: string | null
-  photo: string | null
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  photo: string | null;
 }
 
 interface Submission {
-  id: string
-  media: string
-  status: string
-  severity: number
-  submittedAt: string
-  category?: string
+  id: string;
+  media: string;
+  status: string;
+  severity: number;
+  submittedAt: string;
+  category?: string;
 }
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [isEditing, setIsEditing] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [editedProfile, setEditedProfile] = useState<Partial<UserProfile>>({})
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const router = useRouter()
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editedProfile, setEditedProfile] = useState<Partial<UserProfile>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    loadProfileData()
-  }, [])
+    loadProfileData();
+  }, []);
 
   const loadProfileData = async () => {
     try {
-      const [profileResult, submissionsResult] = await Promise.all([getUserProfile(), getRecentSubmissions(6)])
+      const [profileResult, submissionsResult] = await Promise.all([
+        getUserProfile(),
+        getRecentSubmissions(6),
+      ]);
 
       // runtime type guard for user payload
       const isUserProfile = (v: unknown): v is UserProfile => {
-        if (typeof v !== "object" || v === null) return false
-        const o = v as Record<string, unknown>
+        if (typeof v !== "object" || v === null) return false;
+        const o = v as Record<string, unknown>;
         return (
           typeof o.id === "string" &&
           (o.name === null || typeof o.name === "string") &&
           (o.email === null || typeof o.email === "string") &&
           (o.phone === null || typeof o.phone === "string") &&
-          (o.photo === null || typeof o.photo === "string")        )
-      }
+          (o.photo === null || typeof o.photo === "string")
+        );
+      };
 
       if (profileResult.success && isUserProfile(profileResult.data)) {
-        setProfile(profileResult.data)
-        setEditedProfile(profileResult.data)
+        setProfile(profileResult.data);
+        setEditedProfile(profileResult.data);
       }
 
       // runtime type guard for submissions array (validate shape of each element)
       const isSubmission = (x: unknown): x is Submission => {
-        if (typeof x !== "object" || x === null) return false
-        const s = x as Record<string, unknown>
+        if (typeof x !== "object" || x === null) return false;
+        const s = x as Record<string, unknown>;
         return (
           typeof s.id === "string" &&
           typeof s.media === "string" &&
           typeof s.status === "string" &&
           typeof s.severity === "number" &&
           (typeof s.submittedAt === "string" || s.submittedAt instanceof Date)
-        )
-      }
+        );
+      };
 
       const isSubmissionArray = (v: unknown): v is Submission[] =>
-        Array.isArray(v) && v.every((el) => isSubmission(el))
+        Array.isArray(v) && v.every((el) => isSubmission(el));
 
-      if (submissionsResult.success && isSubmissionArray(submissionsResult.data)) {
-        setSubmissions(submissionsResult.data)
+      if (
+        submissionsResult.success &&
+        isSubmissionArray(submissionsResult.data)
+      ) {
+        setSubmissions(submissionsResult.data);
       }
     } catch (error) {
-      console.error("Failed to load profile data:", error)
+      console.error("Failed to load profile data:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSaveProfile = async () => {
-    if (!profile) return
+    if (!profile) return;
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       // Build payload matching server expectation: only string values (no null)
-      const payload: { name?: string; email?: string; phone?: string; photo?: string } = {}
-      const keys = ["name", "email", "phone", "photo"] as const
+      const payload: {
+        name?: string;
+        email?: string;
+        phone?: string;
+        photo?: string;
+      } = {};
+      const keys = ["name", "email", "phone", "photo"] as const;
 
       for (const k of keys) {
         if (Object.prototype.hasOwnProperty.call(editedProfile, k)) {
-          const val = editedProfile[k as keyof typeof editedProfile] as string | null | undefined
-          if (val === undefined) continue // untouched
-          payload[k] = val === null ? "" : String(val) // convert null => "" to clear on server if desired
+          const val = editedProfile[k as keyof typeof editedProfile] as
+            | string
+            | null
+            | undefined;
+          if (val === undefined) continue; // untouched
+          payload[k] = val === null ? "" : String(val); // convert null => "" to clear on server if desired
         }
       }
 
-      const result = await updateUserProfile(profile.id, payload)
+      const result = await updateUserProfile(profile.id, payload);
       if (result.success) {
         // apply to UI and map empty-string back to null
-        const updated: UserProfile = { ...profile }
+        const updated: UserProfile = { ...profile };
         for (const k of keys) {
           if (k in payload) {
-            const v = payload[k]
+            const v = payload[k];
             if (v === "") {
-              updated[k] = null
+              updated[k] = null;
             } else if (typeof v === "string") {
-              updated[k] = v
+              updated[k] = v;
             }
           }
         }
-        setProfile(updated)
-        setIsEditing(false)
+        setProfile(updated);
+        setIsEditing(false);
       }
     } catch (error) {
-      console.error("Failed to update profile:", error)
+      console.error("Failed to update profile:", error);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
-  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file || !profile) return
+  const handlePhotoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !profile) return;
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       if (!storage) {
-        throw new Error("Firebase Storage not initialized on client. Ensure src/lib/firebase.ts initializes storage on window.")
+        throw new Error(
+          "Firebase Storage not initialized on client. Ensure src/lib/firebase.ts initializes storage on window."
+        );
       }
 
-      const path = `profiles/${profile.id}-${Date.now()}_${file.name}`
-      const sRef = storageRef(storage, path)
-      await uploadBytes(sRef, file)
-      const downloadURL = await getDownloadURL(sRef)
+      const path = `profiles/${profile.id}-${Date.now()}_${file.name}`;
+      const sRef = storageRef(storage, path);
+      await uploadBytes(sRef, file);
+      const downloadURL = await getDownloadURL(sRef);
 
       // Save URL to server (updateUserProfile now accepts photo)
-      const result = await updateUserProfile(profile.id, { photo: downloadURL })
+      const result = await updateUserProfile(profile.id, {
+        photo: downloadURL,
+      });
       if (result.success) {
-        setProfile({ ...profile, photo: downloadURL })
+        setProfile({ ...profile, photo: downloadURL });
       } else {
-        console.error("Failed to save photo URL to server:", result)
+        console.error("Failed to save photo URL to server:", result);
       }
     } catch (error) {
-      console.error("Failed to upload photo:", error)
+      console.error("Failed to upload photo:", error);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
       // clear file input
-      if (fileInputRef.current) fileInputRef.current.value = ""
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  }
+  };
 
   const handleDownload = async (url: string, filename: string) => {
     try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Network response was not ok.");
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Network response was not ok.");
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Download failed:", error);
       window.open(url, "_blank");
     }
-  }
+  };
   const handleDeletePhoto = async () => {
-    if (!profile) return
+    if (!profile) return;
 
     try {
-      const result = await deleteUserPhoto(profile.id)
+      const result = await deleteUserPhoto(profile.id);
       if (result.success) {
         // store null in UI for cleared photo
-        setProfile({ ...profile, photo: null })
+        setProfile({ ...profile, photo: null });
       }
     } catch (error) {
-      console.error("Failed to delete photo:", error)
+      console.error("Failed to delete photo:", error);
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "verified":
-        return "bg-green-500"
+        return "bg-green-500";
       case "rejected":
-        return "bg-red-500"
+        return "bg-red-500";
       default:
-        return "bg-yellow-500"
+        return "bg-yellow-500";
     }
-  }
+  };
 
   // use a clean URL check like submissions page (ignore query string when checking extension)
   const isVideo = (url: string) => {
-    const cleanUrl = url ? url.split("?")[0] : ""
-    return cleanUrl && /\.(mp4|webm|mov|ogg|avi)$/i.test(cleanUrl)
-  }
+    const cleanUrl = url ? url.split("?")[0] : "";
+    return cleanUrl && /\.(mp4|webm|mov|ogg|avi)$/i.test(cleanUrl);
+  };
 
   // removed client-side thumbnail generation (use poster/fallback or stored thumbnail if available)
 
@@ -230,7 +272,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!profile) {
@@ -238,10 +280,12 @@ export default function ProfilePage() {
       <div className="max-w-7xl mx-auto p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600">Profile not found</h1>
-          <p className="text-gray-600 mt-2">Unable to load your profile information.</p>
+          <p className="text-gray-600 mt-2">
+            Unable to load your profile information.
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -254,7 +298,10 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               Recent Submissions
-              <Button variant="outline" size="sm" onClick={() => router.push("/user/submissions")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/user/submissions")}>
                 View All Submissions
               </Button>
             </CardTitle>
@@ -263,7 +310,10 @@ export default function ProfilePage() {
             {submissions.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>No submissions yet</p>
-                <Button variant="outline" className="mt-2 bg-transparent" onClick={() => router.push("/submit")}>
+                <Button
+                  variant="outline"
+                  className="mt-2 bg-transparent"
+                  onClick={() => router.push("/submit")}>
                   Create First Submission
                 </Button>
               </div>
@@ -271,7 +321,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {submissions.map((submission) => {
                   // Use the same logic as submissions page
-                  const isVideoResult = isVideo(submission.media)
+                  const isVideoResult = isVideo(submission.media);
 
                   return (
                     <Dialog key={submission.id}>
@@ -293,23 +343,27 @@ export default function ProfilePage() {
                               </div>
                             </>
                           ) : (
-                            <Image
+                            <img
                               src={submission.media || "/placeholder.svg"}
                               alt={submission.category || "Submission"}
-                              fill
                               sizes="(max-width: 768px) 50vw, 33vw"
-                              className="object-cover group-hover:scale-105 transition-transform duration-200"
+                              className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
                             />
                           )}
                           <div className="absolute top-2 left-2 flex gap-1">
-                            <Badge className={`${getStatusColor(submission.status)} text-white text-xs`}>
+                            <Badge
+                              className={`${getStatusColor(
+                                submission.status
+                              )} text-white text-xs`}>
                               {submission.status}
                             </Badge>
                           </div>
                         </div>
                       </DialogTrigger>
                       <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-                        <DialogTitle className="sr-only">Submission preview</DialogTitle>
+                        <DialogTitle className="sr-only">
+                          Submission preview
+                        </DialogTitle>
                         <div className="relative">
                           {isVideoResult ? (
                             <video
@@ -319,7 +373,7 @@ export default function ProfilePage() {
                               className="w-full max-h-[70vh] object-contain"
                             />
                           ) : (
-                            <Image
+                            <img
                               src={submission.media || "/placeholder.svg"}
                               alt={submission.category || "Submission"}
                               width={1200}
@@ -330,38 +384,53 @@ export default function ProfilePage() {
                           <div className="p-4 border-t">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex gap-2">
-                                <Badge className={`${getStatusColor(submission.status)} text-white`}>
+                                <Badge
+                                  className={`${getStatusColor(
+                                    submission.status
+                                  )} text-white`}>
                                   {submission.status}
                                 </Badge>
-                                {submission.category && <Badge variant="outline">{submission.category}</Badge>}
+                                {submission.category && (
+                                  <Badge variant="outline">
+                                    {submission.category}
+                                  </Badge>
+                                )}
                               </div>
                               <div className="flex gap-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleDownload(submission.media, `submission-${submission.id}`)}
-                                >
+                                  onClick={() =>
+                                    handleDownload(
+                                      submission.media,
+                                      `submission-${submission.id}`
+                                    )
+                                  }>
                                   <Download className="w-4 h-4 mr-1" />
                                   Download
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(submission.media, "_blank")}
-                                >
+                                  onClick={() =>
+                                    window.open(submission.media, "_blank")
+                                  }>
                                   <ExternalLink className="w-4 h-4 mr-1" />
                                   Open
                                 </Button>
                               </div>
                             </div>
                             <p className="text-sm text-gray-600">
-                              Submitted: {new Date(submission.submittedAt).toLocaleDateString()}
+                              Submitted:{" "}
+                              {new Date(
+                                submission.submittedAt
+                              ).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                       </DialogContent>
                     </Dialog>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -374,7 +443,10 @@ export default function ProfilePage() {
             <CardTitle className="flex items-center justify-between">
               Profile Information
               {!isEditing && (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}>
                   <Edit2 className="w-4 h-4 mr-1" />
                   Edit
                 </Button>
@@ -387,21 +459,33 @@ export default function ProfilePage() {
               <div className="relative group">
                 <Avatar className="w-50 h-50">
                   <AvatarImage
-                    src={!isVideo(profile.photo || "") ? profile.photo || "/placeholder.svg" : "/placeholder.svg"}
+                    src={
+                      !isVideo(profile.photo || "")
+                        ? profile.photo || "/placeholder.svg"
+                        : "/placeholder.svg"
+                    }
                     alt={profile.name || "Profile"}
                   />
                   <AvatarFallback className="text-2xl">
-                    {profile.name?.charAt(0)?.toUpperCase() || profile.email?.charAt(0)?.toUpperCase() || "U"}
+                    {profile.name?.charAt(0)?.toUpperCase() ||
+                      profile.email?.charAt(0)?.toUpperCase() ||
+                      "U"}
                   </AvatarFallback>
                 </Avatar>
                 {isEditing && (
                   <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="flex gap-2">
-                      <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => fileInputRef.current?.click()}>
                         <Camera className="w-4 h-4" />
                       </Button>
                       {profile.photo && (
-                        <Button size="sm" variant="destructive" onClick={handleDeletePhoto}>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={handleDeletePhoto}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       )}
@@ -409,7 +493,13 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
             </div>
 
             {/* Profile Fields */}
@@ -420,11 +510,18 @@ export default function ProfilePage() {
                   <Input
                     id="name"
                     value={editedProfile.name || ""}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })}
+                    onChange={(e) =>
+                      setEditedProfile({
+                        ...editedProfile,
+                        name: e.target.value,
+                      })
+                    }
                     placeholder="Enter your name"
                   />
                 ) : (
-                  <p className="mt-1 text-lg text-gray-900">{profile.name || "Not provided"}</p>
+                  <p className="mt-1 text-lg text-gray-900">
+                    {profile.name || "Not provided"}
+                  </p>
                 )}
               </div>
 
@@ -435,11 +532,18 @@ export default function ProfilePage() {
                     id="email"
                     type="email"
                     value={editedProfile.email || ""}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, email: e.target.value })}
+                    onChange={(e) =>
+                      setEditedProfile({
+                        ...editedProfile,
+                        email: e.target.value,
+                      })
+                    }
                     placeholder="Enter your email"
                   />
                 ) : (
-                  <p className="mt-1 text-lg text-gray-900">{profile.email || "Not provided"}</p>
+                  <p className="mt-1 text-lg text-gray-900">
+                    {profile.email || "Not provided"}
+                  </p>
                 )}
               </div>
 
@@ -450,11 +554,18 @@ export default function ProfilePage() {
                     id="phone"
                     type="tel"
                     value={editedProfile.phone || ""}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, phone: e.target.value })}
+                    onChange={(e) =>
+                      setEditedProfile({
+                        ...editedProfile,
+                        phone: e.target.value,
+                      })
+                    }
                     placeholder="Enter your phone number"
                   />
                 ) : (
-                  <p className="mt-1 text-lg text-gray-900">{profile.phone || "Not provided"}</p>
+                  <p className="mt-1 text-lg text-gray-900">
+                    {profile.phone || "Not provided"}
+                  </p>
                 )}
               </div>
             </div>
@@ -462,18 +573,20 @@ export default function ProfilePage() {
             {/* Action Buttons */}
             {isEditing && (
               <div className="flex gap-2 pt-4">
-                <Button onClick={handleSaveProfile} disabled={isSaving} className="flex-1">
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="flex-1">
                   <Save className="w-4 h-4 mr-1" />
                   {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setIsEditing(false)
-                    setEditedProfile(profile)
+                    setIsEditing(false);
+                    setEditedProfile(profile);
                   }}
-                  disabled={isSaving}
-                >
+                  disabled={isSaving}>
                   <X className="w-4 h-4 mr-1" />
                   Cancel
                 </Button>
@@ -483,5 +596,5 @@ export default function ProfilePage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

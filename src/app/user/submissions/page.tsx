@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getUserMedia, deleteReportFromDb } from "@/actions/media";
-import Image from "next/image";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { deleteReportFromDb, getUserMedia } from "@/actions/media";
+import { LocationDisplay } from "@/components/LocationDisplay";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogTrigger,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, Play, Trash2, CheckCircle, Clock } from "lucide-react";
-import { LocationDisplay } from "@/components/LocationDisplay";
+import {
+  CheckCircle,
+  Clock,
+  Download,
+  ExternalLink,
+  Play,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Define the Submission type based on what getUserMedia returns
 interface Submission {
@@ -68,7 +74,9 @@ export default function UserSubmissionsPage() {
     loadSubmissions();
   }, []);
 
-  const verifiedSubmissions = submissions.filter((s) => s.status === "verified");
+  const verifiedSubmissions = submissions.filter(
+    (s) => s.status === "verified"
+  );
   const otherSubmissions = submissions.filter((s) => s.status !== "verified");
 
   const isVideo = (url: string) => {
@@ -89,11 +97,15 @@ export default function UserSubmissionsPage() {
 
   const handleDelete = async (submissionId: string) => {
     try {
-      if(!window.confirm("Are you sure you want to permanently delete this submission?")) {
+      if (
+        !window.confirm(
+          "Are you sure you want to permanently delete this submission?"
+        )
+      ) {
         return;
       }
       const result = await deleteReportFromDb(submissionId);
-      if (result.success){
+      if (result.success) {
         setSubmissions((prev) => prev.filter((s) => s.id !== submissionId));
       } else {
         alert(`Failed to delete submission: ${result.error}`);
@@ -119,9 +131,7 @@ export default function UserSubmissionsPage() {
 
     if (items.length === 0) {
       return (
-        <p className="text-center text-gray-500 py-8">
-          No submissions found.
-        </p>
+        <p className="text-center text-gray-500 py-8">No submissions found.</p>
       );
     }
 
@@ -149,27 +159,26 @@ export default function UserSubmissionsPage() {
                       </div>
                     </>
                   ) : (
-                    <Image
+                    <img
                       src={submission.media}
                       alt={submission.description || "Submission"}
-                      fill
-                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-200"
+                      className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
                     />
                   )}
                   <div className="absolute top-2 left-2 flex gap-1">
                     <Badge
                       className={`${getStatusColor(
                         submission.status
-                      )} text-white text-xs`}
-                    >
+                      )} text-white text-xs`}>
                       {submission.status}
                     </Badge>
                   </div>
                 </div>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-                <DialogTitle className="sr-only">Submission Preview</DialogTitle>
+                <DialogTitle className="sr-only">
+                  Submission Preview
+                </DialogTitle>
                 <div className="relative">
                   {isVideoResult ? (
                     <video
@@ -179,7 +188,7 @@ export default function UserSubmissionsPage() {
                       className="w-full max-h-[70vh] object-contain"
                     />
                   ) : (
-                    <Image
+                    <img
                       src={submission.media}
                       alt={submission.description || "Submission"}
                       width={1200}
@@ -193,8 +202,7 @@ export default function UserSubmissionsPage() {
                         <Badge
                           className={`${getStatusColor(
                             submission.status
-                          )} text-white`}
-                        >
+                          )} text-white`}>
                           {submission.status}
                         </Badge>
                         {submission.category && (
@@ -205,8 +213,12 @@ export default function UserSubmissionsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDownload(submission.media, `submission-${submission.id}`)}
-                        >
+                          onClick={() =>
+                            handleDownload(
+                              submission.media,
+                              `submission-${submission.id}`
+                            )
+                          }>
                           <Download className="w-4 h-4 mr-1" />
                           Download
                         </Button>
@@ -215,16 +227,14 @@ export default function UserSubmissionsPage() {
                           size="sm"
                           onClick={() =>
                             window.open(submission.media, "_blank")
-                          }
-                        >
+                          }>
                           <ExternalLink className="w-4 h-4 mr-1" />
                           Open
                         </Button>
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDelete(submission.id)}
-                        >
+                          onClick={() => handleDelete(submission.id)}>
                           <Trash2 className="w-4 h-4 mr-1" />
                           Delete
                         </Button>
@@ -238,9 +248,9 @@ export default function UserSubmissionsPage() {
                       <p className="text-sm mt-1">{submission.description}</p>
                     )}
                     <LocationDisplay
-                    latitude={submission.latitude}
-                    longitude={submission.longitude}
-                    className="text-sm text-muted-foreground mt-1"
+                      latitude={submission.latitude}
+                      longitude={submission.longitude}
+                      className="text-sm text-muted-foreground mt-1"
                     />
                   </div>
                 </div>
@@ -261,16 +271,14 @@ export default function UserSubmissionsPage() {
             <Button
               onClick={() => setView("verified")}
               variant={view === "verified" ? "default" : "outline"}
-              className="w-full sm:w-auto"
-            >
+              className="w-full sm:w-auto">
               <CheckCircle className="w-5 h-5 mr-2" />
               Verified Submissions
             </Button>
             <Button
               onClick={() => setView("other")}
               variant={view === "other" ? "default" : "outline"}
-              className="w-full sm:w-auto"
-            >
+              className="w-full sm:w-auto">
               <Clock className="w-5 h-5 mr-2" />
               Pending & Other
             </Button>
