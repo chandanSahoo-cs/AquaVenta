@@ -35,12 +35,6 @@ import { Label } from "./ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Slider } from "./ui/slider";
 
-import coastlineData from "@/data/india_coastline.json";
-import distance from "@turf/distance";
-import { point } from "@turf/helpers";
-import nearestPointOnLine from "@turf/nearest-point-on-line";
-import type { FeatureCollection, LineString } from "geojson";
-
 // Define a type for the event data to avoid using 'any'
 type EventData = {
   [key: string]: unknown; // Allow other properties
@@ -331,7 +325,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
     }
 
     const markers = filteredData
-      .filter((e) => (e.latitude || e.LATITUDE))
+      .filter((e) => e.latitude || e.LATITUDE)
       .map((event) => {
         const lat = parseFloat(event.latitude ?? event.LATITUDE ?? "0");
         const lng = parseFloat(event.longitude ?? event.LONGITUDE ?? "0");

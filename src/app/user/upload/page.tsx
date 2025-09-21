@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useSync } from "@/hooks/useSync";
+import { db } from "@/lib/db";
 import { storage } from "@/lib/firebase";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { FileImage, Loader2, MapPin, Upload } from "lucide-react";
@@ -14,6 +16,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 export default function UploadPage() {
+  useSync();
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
@@ -136,6 +139,26 @@ export default function UploadPage() {
     setMessage("");
     setUploadSuccess(false);
 
+    const uploadId = crypto.randomUUID();
+
+    // ✅ Offline case → save in IndexedDB
+    if (!navigator.onLine) {
+      await db.uploads.put({
+        id: uploadId,
+        file,
+        description,
+        coords: coords || undefined,
+        createdAt: Date.now(),
+        synced: false,
+      });
+
+      setMessage("Saved offline. Will sync when online.");
+      setUploadSuccess(true);
+      setUploading(false);
+      return;
+    }
+
+    // ✅ Online case → normal upload
     try {
       const storageRef = ref(storage, `media/${Date.now()}_${file.name}`);
       const snapshot = await uploadBytes(storageRef, file);
@@ -144,7 +167,6 @@ export default function UploadPage() {
       const formData = new FormData();
       formData.append("description", description);
       formData.append("fileUrl", downloadURL);
-      // Send coordinates instead of the location string
       if (coords) {
         formData.append("latitude", String(coords.lat));
         formData.append("longitude", String(coords.lon));
