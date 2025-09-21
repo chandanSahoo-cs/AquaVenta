@@ -106,7 +106,7 @@ const reportDatasets = {
 };
 
 const userReportDatasets = {
-  "user-reports": {
+  userReports: {
     name: "User Reports",
     url: "/api/user-reports",
     color: "#FF8CFF", // pink
@@ -311,11 +311,13 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
   }, [mapStyle, is3D]);
 
   useEffect(() => {
-    console.log("hello from effect");
+    // console.log("hello from effect");
     if (mapType == "publicMap") {
       if (selectedDatasets.includes("past90days")) return;
+      if (selectedDatasets.includes("userReports")) return;
       // setSelectedDatasets()
       toggleDataset("past90days");
+      toggleDataset("userReports");
       // addMarkersToMap("past90days");
     }
   }, [isDataLoaded, selectedDatasets]);
@@ -459,7 +461,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
               )}
             </DialogTitle>
             <DialogDescription>
-              Complete information about this Ocean Hazard  event.
+              Complete information about this Ocean Hazard event.
             </DialogDescription>
           </DialogHeader>
 
@@ -535,7 +537,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
                   <div className="flex items-center gap-2">
                     <Database className="h-4 w-4 text-primary" />
                     <Label className="text-sm font-medium text-foreground">
-                      Ocean Hazard  Data {!isDataLoaded && "(Loading...)"}
+                      Ocean Hazard Data {!isDataLoaded && "(Loading...)"}
                     </Label>
                   </div>
 
