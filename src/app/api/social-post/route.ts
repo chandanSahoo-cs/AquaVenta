@@ -70,7 +70,11 @@ async function searchReddit(query: string): Promise<RedditApiResponse> {
   url.searchParams.set("sort", "new");
 
   const res = await fetch(url.toString(), {
-    headers: { "User-Agent": "hazard-monitor/1.0" }, // important for Reddit API
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (compatible; HazardMonitor/1.0; +https://aqua-venta.vercel.app)",
+    },
+    cache: "no-store",
   });
 
   if (!res.ok) throw new Error("Failed to fetch search results");
