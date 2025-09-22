@@ -113,6 +113,101 @@ const userReportDatasets = {
   },
 };
 
+const hotspotDatasets = {
+  criticalHotspots: {
+    name: "Critical Hotspots",
+    color: "#ff4444", // bright red
+    data: [
+      {
+        id: "hotspot-1",
+        name: "Chennai Coastal Zone",
+        latitude: "13.0827",
+        longitude: "80.2707",
+        severity: "Critical",
+        riskLevel: "High",
+        lastUpdated: "2024-01-15",
+        description: "High tsunami risk area with dense population",
+      },
+      {
+        id: "hotspot-2",
+        name: "Mumbai Harbor",
+        latitude: "19.0760",
+        longitude: "72.8777",
+        severity: "High",
+        riskLevel: "Medium-High",
+        lastUpdated: "2024-01-10",
+        description: "Major port area with significant infrastructure",
+      },
+      {
+        id: "hotspot-3",
+        name: "Kochi Backwaters",
+        latitude: "9.9312",
+        longitude: "76.2673",
+        severity: "Medium",
+        riskLevel: "Medium",
+        lastUpdated: "2024-01-12",
+        description: "Coastal wetland ecosystem at risk",
+      },
+      {
+        id: "hotspot-4",
+        name: "Visakhapatnam Port",
+        latitude: "17.6868",
+        longitude: "83.2185",
+        severity: "High",
+        riskLevel: "High",
+        lastUpdated: "2024-01-08",
+        description: "Strategic naval and commercial port",
+      },
+      {
+        id: "hotspot-5",
+        name: "Puducherry Coast",
+        latitude: "11.9416",
+        longitude: "79.8083",
+        severity: "Medium",
+        riskLevel: "Medium",
+        lastUpdated: "2024-01-14",
+        description: "Tourist coastal area with moderate risk",
+      },
+    ],
+  },
+  warningZones: {
+    name: "Warning Zones",
+    color: "#ff8800", // orange
+    data: [
+      {
+        id: "warning-1",
+        name: "Goa Beaches",
+        latitude: "15.2993",
+        longitude: "74.1240",
+        severity: "Medium",
+        riskLevel: "Medium",
+        lastUpdated: "2024-01-13",
+        description: "Popular tourist destination requiring monitoring",
+      },
+      {
+        id: "warning-2",
+        name: "Mangalore Coast",
+        latitude: "12.9141",
+        longitude: "74.8560",
+        severity: "Medium",
+        riskLevel: "Medium-Low",
+        lastUpdated: "2024-01-11",
+        description: "Industrial coastal area with moderate exposure",
+      },
+      {
+        id: "warning-3",
+        name: "Paradip Port",
+        latitude: "20.2648",
+        longitude: "86.6947",
+        severity: "Low",
+        riskLevel: "Low-Medium",
+        lastUpdated: "2024-01-09",
+        description: "Eastern coast monitoring zone",
+      },
+    ],
+  },
+};
+
 // ------------------------- HELPER FUNCTIONS -------------------------
 const formatPropertyName = (key: string): string => {
   return (
@@ -325,7 +420,12 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
   // ------------------------- MARKERS -------------------------
   const addMarkersToMap = (datasetKey: string) => {
     const map = mapRef.current;
-    if (!map || !cachedDataRef.current[datasetKey]) return;
+    if (
+      !map ||
+      (!cachedDataRef.current[datasetKey] &&
+        !hotspotDatasets[datasetKey as keyof typeof hotspotDatasets])
+    )
+      return;
 
     if (markersRef.current[datasetKey]) {
       markersRef.current[datasetKey].forEach((m) => m.remove());
@@ -334,73 +434,102 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
     const dataset =
       researchDatasets[datasetKey as keyof typeof researchDatasets] ||
       reportDatasets[datasetKey as keyof typeof reportDatasets] ||
-      userReportDatasets[datasetKey as keyof typeof userReportDatasets];
+      userReportDatasets[datasetKey as keyof typeof userReportDatasets] ||
+      hotspotDatasets[datasetKey as keyof typeof hotspotDatasets];
 
     const color = dataset.color;
-    const cachedData = cachedDataRef.current[datasetKey];
-    console.log(
-      "Cached data for",
-      datasetKey,
-      cachedDataRef.current[datasetKey]
-    );
 
-    let filteredData: EventData[] = cachedData;
+    let dataToProcess: EventData[];
+    if (hotspotDatasets[datasetKey as keyof typeof hotspotDatasets]) {
+      dataToProcess =
+        hotspotDatasets[datasetKey as keyof typeof hotspotDatasets].data;
+    } else {
+      const cachedData = cachedDataRef.current[datasetKey];
+      console.log(
+        "Cached data for",
+        datasetKey,
+        cachedDataRef.current[datasetKey]
+      );
 
-    if (researchDatasets[datasetKey as keyof typeof researchDatasets]) {
-      filteredData = cachedData.filter((event) => {
-        const eventYear = event.year;
-        // Add type check to safely use the 'year' property
-        if (typeof eventYear === "number") {
-          return eventYear >= yearRange[0] && eventYear <= yearRange[1];
-        }
-        return true;
-      });
+      let filteredData: EventData[] = cachedData;
+
+      if (researchDatasets[datasetKey as keyof typeof researchDatasets]) {
+        filteredData = cachedData.filter((event) => {
+          const eventYear = event.year;
+          // Add type check to safely use the 'year' property
+          if (typeof eventYear === "number") {
+            return eventYear >= yearRange[0] && eventYear <= yearRange[1];
+          }
+          return true;
+        });
+      }
+      dataToProcess = filteredData;
     }
 
-    const markers = filteredData
+    const markers = dataToProcess
       .filter((e) => e.latitude || e.LATITUDE)
       .map((event) => {
-        const lat = parseFloat(event.latitude ?? event.LATITUDE ?? "0");
-        const lng = parseFloat(event.longitude ?? event.LONGITUDE ?? "0");
+        const lat = Number.parseFloat(event.latitude ?? event.LATITUDE ?? "0");
+        const lng = Number.parseFloat(
+          event.longitude ?? event.LONGITUDE ?? "0"
+        );
 
         const markerElement = document.createElement("div");
-        markerElement.style.backgroundColor = color;
-        markerElement.style.width = is3D ? "16px" : "12px";
-        markerElement.style.height = is3D ? "16px" : "12px";
-        markerElement.style.borderRadius = "50%";
-        markerElement.style.border = "2px solid white";
-        markerElement.style.boxShadow = is3D
-          ? "0 6px 12px rgba(0,0,0,0.4)"
-          : "0 3px 6px rgba(0,0,0,0.3)";
 
-        const marker = new maplibregl.Marker({ element: markerElement })
+        if (hotspotDatasets[datasetKey as keyof typeof hotspotDatasets]) {
+          // Pointer/pin style marker
+          markerElement.innerHTML = `
+            <div style="
+              position: relative;
+              width: 24px;
+              height: 32px;
+              cursor: pointer;
+            ">
+              <div style="
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 24px;
+                height: 24px;
+                background-color: ${color};
+                border: 3px solid white;
+                border-radius: 50%;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+              "></div>
+              <div style="
+                position: absolute;
+                top: 18px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 0;
+                height: 0;
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-top: 10px solid ${color};
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+              "></div>
+            </div>
+          `;
+        } else {
+          // Original circular markers
+          markerElement.style.backgroundColor = color;
+          markerElement.style.width = is3D ? "16px" : "12px";
+          markerElement.style.height = is3D ? "16px" : "12px";
+          markerElement.style.borderRadius = "50%";
+          markerElement.style.border = "2px solid white";
+          markerElement.style.boxShadow = is3D
+            ? "0 6px 12px rgba(0,0,0,0.4)"
+            : "0 3px 6px rgba(0,0,0,0.3)";
+        }
+
+        const marker = new maplibregl.Marker({
+          element: markerElement,
+          anchor: hotspotDatasets[datasetKey as keyof typeof hotspotDatasets]
+            ? "bottom"
+            : "center",
+        })
           .setLngLat([lng, lat])
-          // .setPopup(
-          //   new maplibregl.Popup({ offset: 25 }).setHTML(`
-          //     <div class="text-sm">
-          //       <strong>${
-          //         event.locationName || event.REGIONNAME || "Unknown"
-          //       }</strong><br/>
-          //       ${event.year ? `Year: ${event.year}<br/>` : ""}
-          //       ${
-          //         event.magnitude || event.MAGNITUDE
-          //           ? `Magnitude: ${event.magnitude ?? event.MAGNITUDE}<br/>`
-          //           : ""
-          //       }
-          //       ${
-          //         event.runupHeight
-          //           ? `Runup Height: ${event.runupHeight}m<br/>`
-          //           : ""
-          //       }
-          //       ${
-          //         event.ORIGINTIME
-          //           ? `Origin Time: ${event.ORIGINTIME}<br/>`
-          //           : ""
-          //       }
-          //       ${event.DEPTH ? `Depth: ${event.DEPTH} km<br/>` : ""}
-          //     </div>
-          //   `)
-          // )
           .addTo(map);
 
         marker.getElement().addEventListener("click", () => {
@@ -598,6 +727,7 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
                           ...researchDatasets,
                           ...reportDatasets,
                           ...userReportDatasets,
+                          ...hotspotDatasets, // Added hotspot datasets to the UI
                         }).map(([key, dataset]) => (
                           <div
                             key={key}
@@ -642,13 +772,21 @@ export default function IndiaMap({ mapType }: IndiaMapProps) {
                                 ]?.color ??
                                 userReportDatasets[
                                   key as keyof typeof userReportDatasets
-                                ]?.color,
+                                ]?.color ??
+                                hotspotDatasets[
+                                  key as keyof typeof hotspotDatasets
+                                ]?.color, // Added hotspot color support
                             }}
                           />
                           {researchDatasets[
                             key as keyof typeof researchDatasets
                           ]?.name ??
                             reportDatasets[key as keyof typeof reportDatasets]
+                              ?.name ??
+                            userReportDatasets[
+                              key as keyof typeof userReportDatasets
+                            ]?.name ??
+                            hotspotDatasets[key as keyof typeof hotspotDatasets] // Added hotspot name support
                               ?.name}
                           <X className="h-3 w-3 cursor-pointer hover:text-destructive" />
                         </Badge>
