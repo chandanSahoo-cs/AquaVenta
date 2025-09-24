@@ -93,7 +93,7 @@ export default function UploadPage() {
       const getUser = async () => {
         const { data } = (await getUserProfile()) as GetUserInterface;
         if (!data) return;
-        // @ts-ignore
+        //@ts-expect-error:for todays hackathon
         setUser(data);
         if (!data.isActive) {
           setMessage("You're banned from uploading any kind of media");

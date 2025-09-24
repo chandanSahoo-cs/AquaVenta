@@ -94,7 +94,7 @@ export default function ProfilePage() {
     const filtered = userReport.userReport.filter(
       (ur) => ur?.validations?.[0]?.verdict === "false"
     );
-    //@ts-ignore
+    //@ts-expect-error:for todays hackathon
     setFilteredReport(filtered);
   }, [userReport]);
 
