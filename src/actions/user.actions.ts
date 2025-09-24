@@ -356,9 +356,13 @@ const getUserReportByVerdict = async (): Promise<UserReportResponse> => {
   }
 };
 
-const banUser = async () => {
+const banUser = async (userId: string) => {
   try {
-    const user = await getCurrentUser();
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
     if (!user) {
       throw new Error("User not found");
     }
@@ -385,6 +389,7 @@ export interface UserWithReportStats {
   email: string | null;
   acceptedCount: number;
   rejectedCount: number;
+  isActive: boolean;
 }
 
 // Query function
@@ -409,6 +414,7 @@ const getUsersWithReportStats = async (): Promise<UserWithReportStats[]> => {
       id: user.id,
       name: user.name,
       email: user.email,
+      isActive: user.isActive,
       acceptedCount,
       rejectedCount,
     };
