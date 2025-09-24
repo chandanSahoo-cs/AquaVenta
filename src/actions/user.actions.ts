@@ -1,10 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/session";
 import bcrypt from "bcrypt";
 import { addDays } from "date-fns";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { cookies } from "next/headers";
+import { Prisma } from "../../generated/prisma";
 
 interface TokenPayload {
   id: string;
@@ -307,9 +309,118 @@ const logoutUser = async () => {
   }
 };
 
+// Get user report by verdict
+
+export type ReportWithLatestValidation = Prisma.ReportGetPayload<{
+  include: {
+    user: true;
+    validations: {
+      orderBy: { validatedAt: "desc" };
+      take: 1;
+    };
+  };
+}>;
+
+export interface UserReportResponse {
+  success: boolean;
+  userReport: ReportWithLatestValidation[];
+}
+
+const getUserReportByVerdict = async (): Promise<UserReportResponse> => {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const userReport = await prisma.report.findMany({
+      where: {
+        userId: user?.id,
+      },
+      include: {
+        user: true,
+        validations: {
+          orderBy: {
+            validatedAt: "desc",
+          },
+          take: 1,
+        },
+      },
+    });
+
+    return { success: true, userReport };
+  } catch (error) {
+    console.error("Getting user report error: ", error);
+    return { success: false, userReport: [] };
+  }
+};
+
+const banUser = async () => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        isActive: false,
+      },
+    });
+
+    return { success: true, updatedUser };
+  } catch (error) {
+    console.error(error);
+    return { success: false, updatedUser: {} };
+  }
+};
+
+export interface UserWithReportStats {
+  id: string;
+  name: string | null;
+  email: string | null;
+  acceptedCount: number;
+  rejectedCount: number;
+}
+
+// Query function
+const getUsersWithReportStats = async (): Promise<UserWithReportStats[]> => {
+  const users = await prisma.user.findMany({
+    include: {
+      reports: {
+        select: { status: true },
+      },
+    },
+  });
+
+  return users.map((user) => {
+    const acceptedCount = user.reports.filter(
+      (r) => r.status === "verified"
+    ).length;
+    const rejectedCount = user.reports.filter(
+      (r) => r.status === "rejected"
+    ).length;
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      acceptedCount,
+      rejectedCount,
+    };
+  });
+};
+
 export {
+  banUser,
   dehashPassword,
   generateAccessToken,
+  getUserReportByVerdict,
+  getUsersWithReportStats,
   giveUserPayload,
   hashPassword,
   loginUser,
