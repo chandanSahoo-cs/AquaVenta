@@ -14,6 +14,10 @@ import {
   getUserProfile,
   updateUserProfile,
 } from "@/actions/profile";
+import {
+  getUserReportByVerdict,
+  UserReportResponse,
+} from "@/actions/user.actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
   Camera,
   Download,
@@ -63,12 +68,27 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [editedProfile, setEditedProfile] = useState<Partial<UserProfile>>({});
+  const [userReport, setUserReport] = useState<UserReportResponse>({
+    success: false,
+    userReport: [],
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     loadProfileData();
+    loadUserReport();
   }, []);
+
+  const loadUserReport = async () => {
+    const report = await getUserReportByVerdict();
+    if (!report) return;
+    setUserReport(report);
+  };
+
+  const filteredReport = userReport.userReport.filter(
+    (ur) => ur.validations[0].verdict === "false"
+  );
 
   const loadProfileData = async () => {
     try {
@@ -289,312 +309,321 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-screen-xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6 text-balance">My Profile</h1>
+    <>
+      <div
+        className={cn(
+          " flex justify-center items-center mx-20 p-3 rounded-2xl bg-green-300",
+          filteredReport.length >= 3 && "bg-red-300"
+        )}>
+        <div>{filteredReport.length} reports of yours have been rejected</div>
+      </div>
+      <div className="max-w-screen-xl mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6 text-balance">My Profile</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Side - Recent Submissions (takes 2 of 3 columns) */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Recent Submissions
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push("/user/submissions")}>
-                View All Submissions
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {submissions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>No submissions yet</p>
-                <Button
-                  variant="outline"
-                  className="mt-2 bg-transparent"
-                  onClick={() => router.push("/submit")}>
-                  Create First Submission
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {submissions.map((submission) => {
-                  // Use the same logic as submissions page
-                  const isVideoResult = isVideo(submission.media);
-
-                  return (
-                    <Dialog key={submission.id}>
-                      <DialogTrigger asChild>
-                        <div className="relative group cursor-pointer rounded-lg overflow-hidden bg-gray-100 aspect-square">
-                          {isVideoResult ? (
-                            <>
-                              <video
-                                src={submission.media}
-                                className="w-full h-full object-cover object-center bg-black"
-                                preload="metadata"
-                                muted
-                                playsInline
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity duration-300 group-hover:bg-black/40">
-                                <div className="bg-black/30 rounded-full p-3">
-                                  <Play className="w-8 h-8 text-white" />
-                                </div>
-                              </div>
-                            </>
-                          ) : (
-                            <img
-                              src={submission.media || "/placeholder.svg"}
-                              alt={submission.category || "Submission"}
-                              sizes="(max-width: 768px) 50vw, 33vw"
-                              className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
-                            />
-                          )}
-                          <div className="absolute top-2 left-2 flex gap-1">
-                            <Badge
-                              className={`${getStatusColor(
-                                submission.status
-                              )} text-white text-xs`}>
-                              {submission.status}
-                            </Badge>
-                          </div>
-                        </div>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-                        <DialogTitle className="sr-only">
-                          Submission preview
-                        </DialogTitle>
-                        <div className="relative">
-                          {isVideoResult ? (
-                            <video
-                              src={submission.media}
-                              controls
-                              autoPlay
-                              className="w-full max-h-[70vh] object-contain"
-                            />
-                          ) : (
-                            <img
-                              src={submission.media || "/placeholder.svg"}
-                              alt={submission.category || "Submission"}
-                              width={1200}
-                              height={800}
-                              className="w-full max-h-[70vh] object-contain"
-                            />
-                          )}
-                          <div className="p-4 border-t">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex gap-2">
-                                <Badge
-                                  className={`${getStatusColor(
-                                    submission.status
-                                  )} text-white`}>
-                                  {submission.status}
-                                </Badge>
-                                {submission.category && (
-                                  <Badge variant="outline">
-                                    {submission.category}
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleDownload(
-                                      submission.media,
-                                      `submission-${submission.id}`
-                                    )
-                                  }>
-                                  <Download className="w-4 h-4 mr-1" />
-                                  Download
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    window.open(submission.media, "_blank")
-                                  }>
-                                  <ExternalLink className="w-4 h-4 mr-1" />
-                                  Open
-                                </Button>
-                              </div>
-                            </div>
-                            <p className="text-sm text-gray-600">
-                              Submitted:{" "}
-                              {new Date(
-                                submission.submittedAt
-                              ).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Right Side - Profile Card (takes 1 of 3 columns) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Profile Information
-              {!isEditing && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Side - Recent Submissions (takes 2 of 3 columns) */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Recent Submissions
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsEditing(true)}>
-                  <Edit2 className="w-4 h-4 mr-1" />
-                  Edit
+                  onClick={() => router.push("/user/submissions")}>
+                  View All Submissions
                 </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {submissions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No submissions yet</p>
+                  <Button
+                    variant="outline"
+                    className="mt-2 bg-transparent"
+                    onClick={() => router.push("/submit")}>
+                    Create First Submission
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {submissions.map((submission) => {
+                    // Use the same logic as submissions page
+                    const isVideoResult = isVideo(submission.media);
+
+                    return (
+                      <Dialog key={submission.id}>
+                        <DialogTrigger asChild>
+                          <div className="relative group cursor-pointer rounded-lg overflow-hidden bg-gray-100 aspect-square">
+                            {isVideoResult ? (
+                              <>
+                                <video
+                                  src={submission.media}
+                                  className="w-full h-full object-cover object-center bg-black"
+                                  preload="metadata"
+                                  muted
+                                  playsInline
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity duration-300 group-hover:bg-black/40">
+                                  <div className="bg-black/30 rounded-full p-3">
+                                    <Play className="w-8 h-8 text-white" />
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <img
+                                src={submission.media || "/placeholder.svg"}
+                                alt={submission.category || "Submission"}
+                                sizes="(max-width: 768px) 50vw, 33vw"
+                                className="object-cover group-hover:scale-105 transition-transform duration-200 w-full h-full"
+                              />
+                            )}
+                            <div className="absolute top-2 left-2 flex gap-1">
+                              <Badge
+                                className={`${getStatusColor(
+                                  submission.status
+                                )} text-white text-xs`}>
+                                {submission.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+                          <DialogTitle className="sr-only">
+                            Submission preview
+                          </DialogTitle>
+                          <div className="relative">
+                            {isVideoResult ? (
+                              <video
+                                src={submission.media}
+                                controls
+                                autoPlay
+                                className="w-full max-h-[70vh] object-contain"
+                              />
+                            ) : (
+                              <img
+                                src={submission.media || "/placeholder.svg"}
+                                alt={submission.category || "Submission"}
+                                width={1200}
+                                height={800}
+                                className="w-full max-h-[70vh] object-contain"
+                              />
+                            )}
+                            <div className="p-4 border-t">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex gap-2">
+                                  <Badge
+                                    className={`${getStatusColor(
+                                      submission.status
+                                    )} text-white`}>
+                                    {submission.status}
+                                  </Badge>
+                                  {submission.category && (
+                                    <Badge variant="outline">
+                                      {submission.category}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleDownload(
+                                        submission.media,
+                                        `submission-${submission.id}`
+                                      )
+                                    }>
+                                    <Download className="w-4 h-4 mr-1" />
+                                    Download
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      window.open(submission.media, "_blank")
+                                    }>
+                                    <ExternalLink className="w-4 h-4 mr-1" />
+                                    Open
+                                  </Button>
+                                </div>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                Submitted:{" "}
+                                {new Date(
+                                  submission.submittedAt
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    );
+                  })}
+                </div>
               )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Profile Photo */}
-            <div className="flex flex-col items-center space-y-4">
-              <div className="relative group">
-                <Avatar className="w-50 h-50">
-                  <AvatarImage
-                    src={
-                      !isVideo(profile.photo || "")
-                        ? profile.photo || "/placeholder.svg"
-                        : "/placeholder.svg"
-                    }
-                    alt={profile.name || "Profile"}
-                  />
-                  <AvatarFallback className="text-2xl">
-                    {profile.name?.charAt(0)?.toUpperCase() ||
-                      profile.email?.charAt(0)?.toUpperCase() ||
-                      "U"}
-                  </AvatarFallback>
-                </Avatar>
-                {isEditing && (
-                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => fileInputRef.current?.click()}>
-                        <Camera className="w-4 h-4" />
-                      </Button>
-                      {profile.photo && (
+            </CardContent>
+          </Card>
+
+          {/* Right Side - Profile Card (takes 1 of 3 columns) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Profile Information
+                {!isEditing && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}>
+                    <Edit2 className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Profile Photo */}
+              <div className="flex flex-col items-center space-y-4">
+                <div className="relative group">
+                  <Avatar className="w-50 h-50">
+                    <AvatarImage
+                      src={
+                        !isVideo(profile.photo || "")
+                          ? profile.photo || "/placeholder.svg"
+                          : "/placeholder.svg"
+                      }
+                      alt={profile.name || "Profile"}
+                    />
+                    <AvatarFallback className="text-2xl">
+                      {profile.name?.charAt(0)?.toUpperCase() ||
+                        profile.email?.charAt(0)?.toUpperCase() ||
+                        "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isEditing && (
+                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-2">
                         <Button
                           size="sm"
-                          variant="destructive"
-                          onClick={handleDeletePhoto}>
-                          <Trash2 className="w-4 h-4" />
+                          variant="secondary"
+                          onClick={() => fileInputRef.current?.click()}>
+                          <Camera className="w-4 h-4" />
                         </Button>
-                      )}
+                        {profile.photo && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={handleDeletePhoto}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                className="hidden"
-              />
-            </div>
-
-            {/* Profile Fields */}
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                {isEditing ? (
-                  <Input
-                    id="name"
-                    value={editedProfile.name || ""}
-                    onChange={(e) =>
-                      setEditedProfile({
-                        ...editedProfile,
-                        name: e.target.value,
-                      })
-                    }
-                    placeholder="Enter your name"
-                  />
-                ) : (
-                  <p className="mt-1 text-lg text-gray-900">
-                    {profile.name || "Not provided"}
-                  </p>
-                )}
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
               </div>
 
-              <div>
-                <Label htmlFor="email">Email</Label>
-                {isEditing ? (
-                  <Input
-                    id="email"
-                    type="email"
-                    value={editedProfile.email || ""}
-                    onChange={(e) =>
-                      setEditedProfile({
-                        ...editedProfile,
-                        email: e.target.value,
-                      })
-                    }
-                    placeholder="Enter your email"
-                  />
-                ) : (
-                  <p className="mt-1 text-lg text-gray-900">
-                    {profile.email || "Not provided"}
-                  </p>
-                )}
+              {/* Profile Fields */}
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Name</Label>
+                  {isEditing ? (
+                    <Input
+                      id="name"
+                      value={editedProfile.name || ""}
+                      onChange={(e) =>
+                        setEditedProfile({
+                          ...editedProfile,
+                          name: e.target.value,
+                        })
+                      }
+                      placeholder="Enter your name"
+                    />
+                  ) : (
+                    <p className="mt-1 text-lg text-gray-900">
+                      {profile.name || "Not provided"}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  {isEditing ? (
+                    <Input
+                      id="email"
+                      type="email"
+                      value={editedProfile.email || ""}
+                      onChange={(e) =>
+                        setEditedProfile({
+                          ...editedProfile,
+                          email: e.target.value,
+                        })
+                      }
+                      placeholder="Enter your email"
+                    />
+                  ) : (
+                    <p className="mt-1 text-lg text-gray-900">
+                      {profile.email || "Not provided"}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  {isEditing ? (
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={editedProfile.phone || ""}
+                      onChange={(e) =>
+                        setEditedProfile({
+                          ...editedProfile,
+                          phone: e.target.value,
+                        })
+                      }
+                      placeholder="Enter your phone number"
+                    />
+                  ) : (
+                    <p className="mt-1 text-lg text-gray-900">
+                      {profile.phone || "Not provided"}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                {isEditing ? (
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={editedProfile.phone || ""}
-                    onChange={(e) =>
-                      setEditedProfile({
-                        ...editedProfile,
-                        phone: e.target.value,
-                      })
-                    }
-                    placeholder="Enter your phone number"
-                  />
-                ) : (
-                  <p className="mt-1 text-lg text-gray-900">
-                    {profile.phone || "Not provided"}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            {isEditing && (
-              <div className="flex gap-2 pt-4">
-                <Button
-                  onClick={handleSaveProfile}
-                  disabled={isSaving}
-                  className="flex-1">
-                  <Save className="w-4 h-4 mr-1" />
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setEditedProfile(profile);
-                  }}
-                  disabled={isSaving}>
-                  <X className="w-4 h-4 mr-1" />
-                  Cancel
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              {/* Action Buttons */}
+              {isEditing && (
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={isSaving}
+                    className="flex-1">
+                    <Save className="w-4 h-4 mr-1" />
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditedProfile(profile);
+                    }}
+                    disabled={isSaving}>
+                    <X className="w-4 h-4 mr-1" />
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

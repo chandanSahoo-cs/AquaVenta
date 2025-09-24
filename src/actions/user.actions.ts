@@ -313,7 +313,6 @@ const logoutUser = async () => {
 
 export type ReportWithLatestValidation = Prisma.ReportGetPayload<{
   include: {
-    user: true;
     validations: {
       orderBy: { validatedAt: "desc" };
       take: 1;
@@ -339,7 +338,6 @@ const getUserReportByVerdict = async (): Promise<UserReportResponse> => {
         userId: user?.id,
       },
       include: {
-        user: true,
         validations: {
           orderBy: {
             validatedAt: "desc",
