@@ -1,6 +1,7 @@
 "use client";
 
 import { uploadMedia } from "@/actions/media";
+import { getUserProfile } from "@/actions/profile";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,10 +11,66 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSync } from "@/hooks/useSync";
 import { db } from "@/lib/db";
 import { storage } from "@/lib/firebase";
+import { cn } from "@/lib/utils";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { FileImage, Loader2, MapPin, Upload } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+
+interface GetUserInterface {
+  data: {
+    name: string | null;
+    id: string;
+    email: string | null;
+    phone: string | null;
+    isActive: boolean;
+    photo: string | null;
+  };
+}
+
+interface UploadDivInterface {
+  title: string;
+  message?: string;
+  type: "uploaded" | "offline" | "banned";
+}
+
+function UploadDiv({ title, message, type }: UploadDivInterface) {
+  return (
+    <div className="text-center space-y-4">
+      <h2 className="text-2xl font-bold">{title}</h2>
+      <div>
+        <Alert
+          className={cn(
+            "border-success/30 bg-success/10 rounded-xl",
+            type === "banned" && "bg-red-300"
+          )}>
+          <AlertDescription
+            className={cn(
+              "text-success font-medium text-base"
+              // type === "banned" && "bg-red-300"
+            )}>
+            {message}
+          </AlertDescription>
+        </Alert>
+      </div>
+      {(type == "uploaded" || type === "banned") && (
+        <Link
+          href="/user/submissions"
+          className="w-full inline-block bg-primary text-primary-foreground py-2.5 px-4 rounded-md hover:bg-primary/90 transition-colors font-semibold">
+          Your Submissions
+        </Link>
+      )}
+      {type === "uploaded" && (
+        <Button
+          onClick={() => window.location.reload()}
+          variant="secondary"
+          className="w-full py-2.5 h-auto">
+          Upload Another File
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export default function UploadPage() {
   useSync();
@@ -27,6 +84,25 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState(false);
+
+  const [user, setUser] = useState<GetUserInterface | null>(null);
+  const [banned, setBanned] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const getUser = async () => {
+        const { data } = (await getUserProfile()) as GetUserInterface;
+        if (!data) return;
+        // @ts-ignore
+        setUser(data);
+        if (!data.isActive) {
+          setMessage("You're banned from uploading any kind of media");
+          setBanned(true);
+        }
+      };
+      getUser();
+    } catch (error) {}
+  }, []);
 
   // This effect runs only once on mount for auto-detection
   useEffect(() => {
@@ -189,103 +265,109 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] grid lg:grid-cols-2">
+    <div
+      className={cn(
+        "min-h-[calc(100vh-64px)] grid lg:grid-cols-2",
+        banned && "flex items-center justify-center"
+      )}>
       {/* Left Side - Upload Area */}
-      <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-lg">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-primary mb-4">
-              Upload Disaster Media
-            </h1>
-            <p className="text-lg text-muted-foreground">
-              Share your observations to help communities and responders
-            </p>
-          </div>
-
-          <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-enterprise-lg">
-            <div
-              className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                dragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/50"
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}>
-              <input
-                type="file"
-                onChange={handleFileSelect}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                accept="image/*,video/*"
-              />
-
-              <div className="space-y-4">
-                <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-primary" />
-                </div>
-
-                <div>
-                  <p className="text-lg font-medium text-foreground mb-2">
-                    Drop a file here or click to browse
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Supports images and video files
-                  </p>
-                </div>
-              </div>
+      {!banned && (
+        <div className="flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-8">
+          <div className="w-full max-w-lg">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-primary mb-4">
+                Upload Disaster Media
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Share your observations to help communities and responders
+              </p>
             </div>
 
-            {file && (
-              <div className="mt-6 space-y-2">
-                <Label className="text-sm font-medium">Selected File:</Label>
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                  <div className="flex items-center space-x-3 overflow-hidden">
-                    <FileImage className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <span className="text-sm font-medium truncate">
-                      {file.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      ({(file.size / 1024 / 1024).toFixed(1)} MB)
-                    </span>
+            <Card className="p-8 bg-white/80 backdrop-blur-sm shadow-enterprise-lg">
+              <div
+                className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  dragActive
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50"
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}>
+                <input
+                  type="file"
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  accept="image/*,video/*"
+                />
+
+                <div className="space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Upload className="w-8 h-8 text-primary" />
                   </div>
-                  <button
-                    onClick={removeFile}
-                    className="text-destructive hover:text-destructive/80 text-sm font-medium flex-shrink-0 ml-4">
-                    Remove
-                  </button>
+
+                  <div>
+                    <p className="text-lg font-medium text-foreground mb-2">
+                      Drop a file here or click to browse
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Supports images and video files
+                    </p>
+                  </div>
                 </div>
               </div>
-            )}
-          </Card>
+
+              {file && (
+                <div className="mt-6 space-y-2">
+                  <Label className="text-sm font-medium">Selected File:</Label>
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                    <div className="flex items-center space-x-3 overflow-hidden">
+                      <FileImage className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm font-medium truncate">
+                        {file.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                      </span>
+                    </div>
+                    <button
+                      onClick={removeFile}
+                      className="text-destructive hover:text-destructive/80 text-sm font-medium flex-shrink-0 ml-4">
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 bg-background">
+      <div
+        className={cn(
+          "flex-1 flex items-center justify-center p-4 sm:p-8 bg-background",
+          !banned && "flex-1"
+        )}>
         <Card className="w-full max-w-md p-8 shadow-enterprise-lg">
-          {uploadSuccess ? (
-            <div className="text-center space-y-4">
-              <h2 className="text-2xl font-bold">Upload Successful</h2>
-              <div>
-                <Alert className="border-success/30 bg-success/10 rounded-xl">
-                  <AlertDescription className="text-success font-medium text-base">
-                    {message}
-                  </AlertDescription>
-                </Alert>
-              </div>
-              <Link
-                href="/user/submissions"
-                className="w-full inline-block bg-primary text-primary-foreground py-2.5 px-4 rounded-md hover:bg-primary/90 transition-colors font-semibold">
-                Your Submissions
-              </Link>
-              <Button
-                onClick={() => window.location.reload()}
-                variant="secondary"
-                className="w-full py-2.5 h-auto">
-                Upload Another File
-              </Button>
-            </div>
+          {uploadSuccess || banned ? (
+            <>
+              {uploadSuccess && (
+                <UploadDiv
+                  title="Uploaded Successfully"
+                  message={message}
+                  type="uploaded"
+                />
+              )}
+
+              {banned && (
+                <UploadDiv
+                  title=" You have been banned"
+                  message={message}
+                  type="banned"
+                />
+              )}
+            </>
           ) : (
             <>
               <div className="text-center mb-8">

@@ -50,6 +50,7 @@ interface UserProfile {
   email: string | null;
   phone: string | null;
   photo: string | null;
+  isActive: boolean;
 }
 
 interface Submission {
@@ -75,6 +76,8 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  const [filteredReport, setFilteredReport] = useState([]);
+
   useEffect(() => {
     loadProfileData();
     loadUserReport();
@@ -86,9 +89,14 @@ export default function ProfilePage() {
     setUserReport(report);
   };
 
-  const filteredReport = userReport.userReport.filter(
-    (ur) => ur.validations[0].verdict === "false"
-  );
+  useEffect(() => {
+    if (!userReport) return;
+    const filtered = userReport.userReport.filter(
+      (ur) => ur?.validations?.[0]?.verdict === "false"
+    );
+    //@ts-ignore
+    setFilteredReport(filtered);
+  }, [userReport]);
 
   const loadProfileData = async () => {
     try {
@@ -312,7 +320,7 @@ export default function ProfilePage() {
     <>
       <div
         className={cn(
-          " flex justify-center items-center mx-20 p-3 rounded-2xl bg-green-300",
+          " flex justify-center items-center mx-28 p-3 rounded-2xl bg-green-300",
           filteredReport.length >= 3 && "bg-red-300"
         )}>
         <div>{filteredReport.length} reports of yours have been rejected</div>
@@ -341,7 +349,7 @@ export default function ProfilePage() {
                   <Button
                     variant="outline"
                     className="mt-2 bg-transparent"
-                    onClick={() => router.push("/submit")}>
+                    onClick={() => router.push("/user/upload")}>
                     Create First Submission
                   </Button>
                 </div>
@@ -596,6 +604,15 @@ export default function ProfilePage() {
                     </p>
                   )}
                 </div>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <p
+                  className={`mt-1 text-lg font-medium ${
+                    profile.isActive ? "text-green-600" : "text-red-600"
+                  }`}>
+                  {profile.isActive ? "Active" : "Banned"}
+                </p>
               </div>
 
               {/* Action Buttons */}
