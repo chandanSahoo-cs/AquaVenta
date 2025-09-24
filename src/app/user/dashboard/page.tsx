@@ -70,6 +70,15 @@ export default function DashboardPage() {
       color: "text-gold",
       iconBgColor: "bg-gold/10",
     },
+    {
+      name: "Analyst History",
+      url: "/analyst/history",
+      role: "analyst",
+      icon: HistoryIcon,
+      description: "View and track the history of verified reports.",
+      color: "text-gold",
+      iconBgColor: "bg-gold/10",
+    },
 
     // Analyst
     {

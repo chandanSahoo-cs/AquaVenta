@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { revalidatePath } from "next/cache";
 
 /**
  * Fetches all reports with a 'pending' status.
@@ -11,7 +11,9 @@ import { getCurrentUser } from "@/lib/session";
 export async function getPendingReports() {
   const user = await getCurrentUser();
   if (user?.role !== "analyst" && user?.role !== "admin") {
-    return { error: "Unauthorized: You do not have permission to view reports." };
+    return {
+      error: "Unauthorized: You do not have permission to view reports.",
+    };
   }
 
   try {
@@ -85,9 +87,9 @@ export async function getReportById(reportId: string) {
  */
 export async function getValidatedReports() {
   const user = await getCurrentUser();
-  if (user?.role !== "analyst" && user?.role !== "admin") {
-    return { error: "Unauthorized: You do not have permission to view this content." };
-  }
+  // if (user?.role !== "analyst" && user?.role !== "admin") {
+  //   return { error: "Unauthorized: You do not have permission to view this content." };
+  // }
 
   try {
     const reports = await prisma.report.findMany({
@@ -126,7 +128,9 @@ interface UpdateReportArgs {
 export async function updateReportStatus(args: UpdateReportArgs) {
   const user = await getCurrentUser();
   if (!user || (user.role !== "analyst" && user.role !== "admin")) {
-    return { error: "Unauthorized: You do not have permission to update reports." };
+    return {
+      error: "Unauthorized: You do not have permission to update reports.",
+    };
   }
 
   const { reportId, verdict, severity, note } = args;
@@ -164,4 +168,3 @@ export async function updateReportStatus(args: UpdateReportArgs) {
     return { error: "Database error: Could not update the report." };
   }
 }
-

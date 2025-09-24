@@ -1,19 +1,14 @@
-import { redirect } from "next/navigation"
-import { getCurrentUser } from "@/lib/session"
-import { getValidatedReports } from "@/actions/analyst"
-import { ValidatedReportCard } from "@/components/ValidateReportCard"
-import { AlertCircle, History, Inbox } from "lucide-react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-
+import { getValidatedReports } from "@/actions/analyst";
+import { Button } from "@/components/ui/button";
+import { ValidatedReportCard } from "@/components/ValidateReportCard";
+import { getCurrentUser } from "@/lib/session";
+import { AlertCircle, History, Inbox } from "lucide-react";
+import Link from "next/link";
 
 export default async function AnalystHistoryPage() {
-  const user = await getCurrentUser()
-  if (!user || (user.role !== "analyst" && user.role !== "admin")) {
-    redirect("/auth")
-  }
+  const user = await getCurrentUser();
 
-  const { reports, error } = await getValidatedReports()
+  const { reports, error } = await getValidatedReports();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -28,10 +23,10 @@ export default async function AnalystHistoryPage() {
           </p>
         </div>
         <Button asChild>
-           <Link href="/analyst/validate">
-              <Inbox className="mr-2 h-4 w-4"/>
-              Back to Validation Queue
-           </Link>
+          <Link href="/analyst/validate">
+            <Inbox className="mr-2 h-4 w-4" />
+            Back to Validation Queue
+          </Link>
         </Button>
       </div>
 
@@ -51,7 +46,7 @@ export default async function AnalystHistoryPage() {
             <ValidatedReportCard
               key={report.id}
               report={{
-                ...report
+                ...report,
               }}
             />
           ))}
@@ -66,5 +61,5 @@ export default async function AnalystHistoryPage() {
         </div>
       ) : null}
     </div>
-  )
+  );
 }
